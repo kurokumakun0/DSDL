@@ -1,0 +1,27 @@
+{
+  "name": "sync",
+  "version": "1.0.0",
+  "description": "sync phaser and socket.io",
+  "dependencies": {
+    "express": "^4.10.2",
+    "phaser": "^2.4.8",
+    "socket.io": "^1.4.6"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TEMU3000/DSDL.git"
+  },
+  "author": "kurokuma",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TEMU3000/DSDL/issues"
+  },
+  "homepage": "https://github.com/TEMU3000/DSDL#readme",
+  "devDependencies": {
+    "webpack": "^1.13.1"
+  }
+}
