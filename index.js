@@ -24,6 +24,7 @@ io.on('connection', function(socket){
   });
   socket.on('message', function(msg){
     console.log('message: ' + msg);
+	io.emit('shoot', msg);
   });
   socket.on('X', function(msg){
     console.log('X: ' + msg);
