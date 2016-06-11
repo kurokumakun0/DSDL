@@ -22,15 +22,23 @@ function preload() {
     game.load.image('sky', '/assets/sky.png');
     game.load.image('bullet', '/assets/bullet.png');
 	game.load.image('player', '/assets/THSR.png');
+	game.load.image('enemy1', '/assets/EMU800.png');
     //game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
 
 }
 
 var player;
 var bullets;
+var enemys;
+
+var score = 0;
+var scoreText;
 
 var fireRate = 100;
 var nextFire = 0;
+
+var enemyRate = 1000;
+var nextEnemy = 0;
 
 function create() {
     game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -46,6 +54,16 @@ function create() {
     bullets.createMultiple(50, 'bullet');
     bullets.setAll('checkWorldBounds', true);
     bullets.setAll('outOfBoundsKill', true);
+	
+	enemys = game.add.group();
+    enemys.enableBody = true;
+    enemys.physicsBodyType = Phaser.Physics.ARCADE;
+
+    enemys.createMultiple(50, 'enemy1');
+    enemys.setAll('checkWorldBounds', true);
+    enemys.setAll('outOfBoundsKill', true);
+	
+	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
 }
 
 var newX = 0;
@@ -65,6 +83,10 @@ function update() {
     player.frame = 4;
     player.body.velocity.x = 10*(-newY);
 	player.body.velocity.y = 10*(-newX);
+	
+	spawn_enemy();
+	
+	game.physics.arcade.overlap(bullets, enemys, enemyHit, null, this);
 }
 
 function fire() {
@@ -74,6 +96,24 @@ function fire() {
 		bullet.reset(player.x, player.y - 10);
 		bullet.body.velocity.y = -400;
 	}
+}
+
+function spawn_enemy() {
+	if (game.time.now > nextEnemy && enemys.countDead() > 0) {
+        nextEnemy = game.time.now + game.rnd.integerInRange(600, 1200);
+        var enemy = enemys.getFirstExists(false);
+        // spawn at a random location top of the screen
+        enemy.reset(game.rnd.integerInRange(20, 780), 0);
+        // also randomize the speed
+        enemy.body.velocity.y = game.rnd.integerInRange(30, 60);
+    }
+}
+
+function enemyHit(bullet, enemy) {
+	bullet.kill();
+	enemy.kill();
+	score += 10;
+    scoreText.text = 'Score: ' + score;
 }
 
 </script>
