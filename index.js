@@ -27,15 +27,15 @@ io.on('connection', function(socket){
 	io.emit('shoot', msg);
   });
   socket.on('X', function(msg){
-    console.log('X: ' + msg);
+    //console.log('X: ' + msg);
 	io.emit('setX', msg);
   });
   socket.on('Y', function(msg){
-    console.log('Y: ' + msg);
+    //console.log('Y: ' + msg);
 	io.emit('setY', msg);
   });
   socket.on('Z', function(msg){
-    console.log('Z: ' + msg);
+    //console.log('Z: ' + msg);
 	io.emit('connectOK', 'OK');
   });
   /*socket.on('zShift', function(msg){
