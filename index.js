@@ -1,4 +1,4 @@
-var express = require("express");
+var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
@@ -23,7 +23,7 @@ io.on('connection', function(socket){
     console.log('user disconnected');
   });
   socket.on('message', function(msg){
-    console.log('message: ' + msg);
+    //console.log('message: ' + msg);
 	io.emit('shoot', msg);
   });
   socket.on('X', function(msg){
