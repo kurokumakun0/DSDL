@@ -142,8 +142,11 @@ function spawn_enemy() {
         var enemy = enemys[1].getFirstExists(false);
         // spawn at a random location top of the screen
         enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0);
-        // also randomize the speed
-        enemy.body.velocity.y = game.rnd.integerInRange(40, 80);
+		var target = game.rnd.integerInRange(20, game.width - 20);
+		enemy.rotation = game.physics.arcade.moveToXY(
+		  enemy, target, game.height,
+		  game.rnd.integerInRange(40, 80)
+		) - Math.PI / 2;
 
 		enemy.enemyNextFire = 0;
     }
