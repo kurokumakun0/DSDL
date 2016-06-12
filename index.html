@@ -35,6 +35,8 @@ var enemyBullets;
 var score = 0;
 var scoreText;
 
+var gameOverText;
+
 var fireRate = 100;
 var nextFire = 0;
 
@@ -123,7 +125,13 @@ function playerHit(player, enemy) {
 	player.kill();
 	enemy.kill();
 	//Temporary Gameover message, will be overlapped if bullet hit enemy after death.
-    scoreText.text = 'Score: ' + score + '\nGameover';
+    scoreText.text = 'Score: ' + score;
+	gameOver();
+}
+
+function gameOver(){
+	gameOverText = game.add.text(game.width/2, game.height / 2, 'Game Over!', { font: '32px sans-serif', fill: '#fff'});
+	gameOverText.anchor.setTo(0.5, 0.5);
 }
 
 function setupBackground(){
