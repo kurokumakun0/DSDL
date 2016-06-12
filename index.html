@@ -24,17 +24,17 @@ function preload() {
 		game.load.image('player', '/assets/THSR.png');
 		game.load.image('enemy1', '/assets/EMU800.png');
 		game.load.image('enemy_bullet', '/assets/bullet2.png');
-    //game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
+		game.load.image('square', '/assets/tile_question_box.png');
+    game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
 }
 
-var player;
-var bullets;
-var enemys;
-var enemyBullets;
+var player, bullets;
+var enemys, enemyBullets;
 var lives;
 const MAX_LIFE = 3;
 var weaponLevel = 0;
 const MAX_WEAPON_LEVEL = 4;
+var boxes;
 
 var score = 0;
 var scoreText;
@@ -49,6 +49,7 @@ var nextFire = 0;
 
 //var enemyRate = 1000;
 var nextEnemy = 0;
+var nextBox = 0;
 
 function create() {
 	setupBackground();
@@ -57,6 +58,7 @@ function create() {
 	setupEnemys();
 	setupEnemyBullets();
 	setupPlayerLives();
+	setupBoxes();
 
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
 
@@ -88,9 +90,12 @@ function update() {
 	spawn_enemy();
 	enemy_fire();
 
+	add_boxes();
+
 	game.physics.arcade.overlap(bullets, enemys, enemyHit, null, this);
 	game.physics.arcade.overlap(player, enemys, playerHit, null, this);
 	game.physics.arcade.overlap(player, enemyBullets, playerHit, null, this);
+	game.physics.arcade.overlap(player, boxes, upgradeWeapon, null, this);
 }
 
 function fire() {
@@ -122,6 +127,19 @@ function fire() {
 	}
 }
 
+function add_boxes()	{
+	if( game.time.now > nextBox && boxes.countDead() > 0 )	{
+		nextBox = game.time.now + game.rnd.integerInRange(10000, 30000);
+		var box = boxes.getFirstExists(false);
+		// spawn at a random location top of the screen
+		box.reset(game.rnd.integerInRange(20, game.width - 20), 0);
+		// also randomize the speed
+		game.physics.arcade.velocityFromAngle(
+			game.rnd.integerInRange(180, 360), 100, box.body.velocity
+		);
+	}
+}
+
 function spawn_enemy() {
 	if (game.time.now > nextEnemy && enemys.countDead() > 0) {
         nextEnemy = game.time.now + game.rnd.integerInRange(1500, 3000);
@@ -131,7 +149,7 @@ function spawn_enemy() {
         // also randomize the speed
         enemy.body.velocity.y = game.rnd.integerInRange(30, 60);
 
-		enemy.enemyNextFire = 0;
+				enemy.enemyNextFire = 0;
     }
 }
 
@@ -169,6 +187,12 @@ function playerHit(player, enemy) {
     }
 }
 
+function upgradeWeapon(player, box)	{
+	box.kill();
+	if( weaponLevel < MAX_WEAPON_LEVEL )
+		weaponLevel ++;
+}
+
 function gameOver(){
 	gameOverText = game.add.text(game.width/2, game.height / 2, 'Game Over!', { font: '32px sans-serif', fill: '#fff'});
 	gameOverText.anchor.setTo(0.5, 0.5);
@@ -192,7 +216,7 @@ function setupBullets(){
     bullets.enableBody = true;
     bullets.physicsBodyType = Phaser.Physics.ARCADE;
 
-    bullets.createMultiple(60, 'bullet');
+    bullets.createMultiple(1000, 'bullet');
     bullets.setAll('checkWorldBounds', true);
     bullets.setAll('outOfBoundsKill', true);
 }
@@ -225,6 +249,16 @@ function setupPlayerLives(){
 		lifeIcon.scale.setTo(0.8, 0.8);
 		lifeIcon.anchor.setTo(0.5, 0.5);
 	}
+}
+
+function setupBoxes() {
+	boxes = game.add.group();
+	boxes.enableBody = true;
+	boxes.physicsBodyType = Phaser.Physics.ARCADE;
+
+	boxes.createMultiple(4, 'square');
+	boxes.setAll('body.collideWorldBounds', true);
+	boxes.setAll('body.bounce', 1);
 }
 
 </script>
