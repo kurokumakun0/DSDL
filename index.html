@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head> 
+<head>
 	<meta charset="UTF-8" />
     <title>Sync</title>
 	<script type="text/javascript" src="https://cdn.jsdelivr.net/phaser/2.4.8/phaser.min.js"></script>
@@ -15,15 +15,15 @@
 <script src="/socket.io/socket.io.js"></script>
 <script type="text/javascript">
 
-var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 var socket = io();
 
 function preload() {
     game.load.image('sky', '/assets/sky.png');
     game.load.image('bullet', '/assets/bullet.png');
-	game.load.image('player', '/assets/THSR.png');
-	game.load.image('enemy1', '/assets/EMU800.png');
-	game.load.image('enemy_bullet', '/assets/bullet2.png');
+		game.load.image('player', '/assets/THSR.png');
+		game.load.image('enemy1', '/assets/EMU800.png');
+		game.load.image('enemy_bullet', '/assets/bullet2.png');
     //game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
 }
 
@@ -55,7 +55,7 @@ function create() {
 	setupEnemys();
 	setupEnemyBullets();
 	setupPlayerLives();
-	
+
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
 }
 
@@ -72,13 +72,13 @@ function update() {
 	socket.on('shoot', function(data) {
 		fire();
     });
-	
+
     player.body.velocity.x = 10*(-newY);
 	player.body.velocity.y = 10*(-newX);
-	
+
 	spawn_enemy();
 	enemy_fire();
-	
+
 	game.physics.arcade.overlap(bullets, enemys, enemyHit, null, this);
 	game.physics.arcade.overlap(player, enemys, playerHit, null, this);
 	game.physics.arcade.overlap(player, enemyBullets, playerHit, null, this);
@@ -101,7 +101,7 @@ function spawn_enemy() {
         enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0);
         // also randomize the speed
         enemy.body.velocity.y = game.rnd.integerInRange(30, 60);
-		
+
 		enemy.enemyNextFire = 0;
     }
 }
@@ -142,7 +142,8 @@ function gameOver(){
 
 function setupBackground(){
 	game.physics.startSystem(Phaser.Physics.ARCADE);
-	game.add.sprite(0, 0, 'sky');
+	var sky = game.add.sprite(0, 0, 'sky');
+	sky.scale.setTo(2,2);
 }
 
 function setupPlayer(){
