@@ -139,7 +139,7 @@ function add_boxes()	{
 		box.reset(game.rnd.integerInRange(20, game.width - 20), 0);
 		// also randomize the speed
 		game.physics.arcade.velocityFromAngle(
-			game.rnd.integerInRange(180, 360), 100, box.body.velocity
+			game.rnd.integerInRange(180, 360), 50, box.body.velocity
 		);
 	}
 }
@@ -284,7 +284,8 @@ function setupBoxes() {
 
 	boxes.createMultiple(4, 'square');
 	boxes.setAll('body.collideWorldBounds', true);
-	boxes.setAll('body.bounce', 1);
+	boxes.setAll('body.bounce.x', 1);
+	boxes.setAll('body.bounce.y', 1);
 }
 
 </script>
