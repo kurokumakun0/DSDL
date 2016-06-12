@@ -141,9 +141,7 @@ function enemy_fire() {
 			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(1000, 5000);
 			var enemy_bullet = enemyBullets.getFirstDead();
 			enemy_bullet.reset(enemy.x+13, enemy.y + 32);
-			var distance = Math.sqrt((player.x - enemy.x)*(player.x - enemy.x) + (player.y - enemy.y)*(player.y - enemy.y));
-			enemy_bullet.body.velocity.x = 400*(player.x - enemy.x)/distance;
-			enemy_bullet.body.velocity.y = 400*(player.y - enemy.y)/distance;
+			game.physics.arcade.moveToObject(enemy_bullet, player, 400);
 		}
 	}, this);
 }
