@@ -57,6 +57,7 @@ function create() {
 	setupPlayerLives();
 
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
+
 }
 
 var newX = 0;
@@ -71,7 +72,13 @@ function update() {
     });
 	socket.on('shoot', function(data) {
 		fire();
-    });
+		if( !player.alive )	{
+			setupPlayer();
+			setupBullets();
+			setupPlayerLives();
+			gameOverText.kill();
+		}
+  });
 
     player.body.velocity.x = 10*(-newY);
 	player.body.velocity.y = 10*(-newX);
@@ -131,7 +138,7 @@ function playerHit(player, enemy) {
       life.kill();
     } else {
       player.kill();
-	  gameOver();
+	  	gameOver();
     }
 }
 
@@ -154,7 +161,7 @@ function setupPlayer(){
 }
 
 function setupBullets(){
-	bullets = game.add.group();
+		bullets = game.add.group();
     bullets.enableBody = true;
     bullets.physicsBodyType = Phaser.Physics.ARCADE;
 
