@@ -23,6 +23,7 @@ function preload() {
     game.load.image('bullet', '/assets/bullet.png');
 	game.load.image('player', '/assets/THSR.png');
 	game.load.image('enemy1', '/assets/EMU800.png');
+	game.load.image('enemy_bullet', '/assets/bullet2.png');
     //game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
 }
 
@@ -37,31 +38,18 @@ var scoreText;
 var fireRate = 100;
 var nextFire = 0;
 
-var enemyRate = 1000;
+//var enemyFireRate = 500;
+//var enemyNextFire = 0;
+
+//var enemyRate = 1000;
 var nextEnemy = 0;
 
 function create() {
-    game.physics.startSystem(Phaser.Physics.ARCADE);
-	game.add.sprite(0, 0, 'sky');
-	player = game.add.sprite(400, 300, 'player');
-	game.physics.arcade.enable(player);
-	player.body.collideWorldBounds = true;
-	
-	bullets = game.add.group();
-    bullets.enableBody = true;
-    bullets.physicsBodyType = Phaser.Physics.ARCADE;
-
-    bullets.createMultiple(50, 'bullet');
-    bullets.setAll('checkWorldBounds', true);
-    bullets.setAll('outOfBoundsKill', true);
-	
-	enemys = game.add.group();
-    enemys.enableBody = true;
-    enemys.physicsBodyType = Phaser.Physics.ARCADE;
-
-    enemys.createMultiple(50, 'enemy1');
-    enemys.setAll('checkWorldBounds', true);
-    enemys.setAll('outOfBoundsKill', true);
+	setupBackground();
+	setupPlayer();
+	setupBullets();
+	setupEnemys();
+	setupEnemyBullets();
 	
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
 }
@@ -80,18 +68,19 @@ function update() {
 		fire();
     });
 	
-    player.frame = 4;
     player.body.velocity.x = 10*(-newY);
 	player.body.velocity.y = 10*(-newX);
 	
 	spawn_enemy();
+	enemy_fire();
 	
 	game.physics.arcade.overlap(bullets, enemys, enemyHit, null, this);
 	game.physics.arcade.overlap(player, enemys, playerHit, null, this);
+	game.physics.arcade.overlap(player, enemyBullets, playerHit, null, this);
 }
 
 function fire() {
-	if (game.time.now > nextFire && bullets.countDead() > 0){
+	if (player.alive && game.time.now > nextFire && bullets.countDead() > 0){
 		nextFire = game.time.now + fireRate;
 		var bullet = bullets.getFirstDead();
 		bullet.reset(player.x, player.y - 10);
@@ -101,13 +90,26 @@ function fire() {
 
 function spawn_enemy() {
 	if (game.time.now > nextEnemy && enemys.countDead() > 0) {
-        nextEnemy = game.time.now + game.rnd.integerInRange(600, 1200);
+        nextEnemy = game.time.now + game.rnd.integerInRange(1500, 3000);
         var enemy = enemys.getFirstExists(false);
         // spawn at a random location top of the screen
-        enemy.reset(game.rnd.integerInRange(20, 780), 0);
+        enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0);
         // also randomize the speed
         enemy.body.velocity.y = game.rnd.integerInRange(30, 60);
+		
+		enemy.enemyNextFire = 0;
     }
+}
+
+function enemy_fire() {
+	enemys.forEachAlive(function (enemy) {
+		if (game.time.now > enemy.enemyNextFire && enemyBullets.countDead() > 0){
+			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(1000, 5000);
+			var enemy_bullet = enemyBullets.getFirstDead();
+			enemy_bullet.reset(enemy.x+13, enemy.y + 32);
+			enemy_bullet.body.velocity.y = 400;
+		}
+	}, this);
 }
 
 function enemyHit(bullet, enemy) {
@@ -120,7 +122,50 @@ function enemyHit(bullet, enemy) {
 function playerHit(player, enemy) {
 	player.kill();
 	enemy.kill();
+	//Temporary Gameover message, will be overlapped if bullet hit enemy after death.
     scoreText.text = 'Score: ' + score + '\nGameover';
+}
+
+function setupBackground(){
+	game.physics.startSystem(Phaser.Physics.ARCADE);
+	game.add.sprite(0, 0, 'sky');
+}
+
+function setupPlayer(){
+	player = game.add.sprite(game.width / 2, game.height - 50, 'player');
+	game.physics.arcade.enable(player);
+	player.body.collideWorldBounds = true;
+	//game.player.body.setSize(20, 20, 0, -5);
+}
+
+function setupBullets(){
+	bullets = game.add.group();
+    bullets.enableBody = true;
+    bullets.physicsBodyType = Phaser.Physics.ARCADE;
+
+    bullets.createMultiple(50, 'bullet');
+    bullets.setAll('checkWorldBounds', true);
+    bullets.setAll('outOfBoundsKill', true);
+}
+
+function setupEnemys(){
+	enemys = game.add.group();
+    enemys.enableBody = true;
+    enemys.physicsBodyType = Phaser.Physics.ARCADE;
+
+    enemys.createMultiple(50, 'enemy1');
+    enemys.setAll('checkWorldBounds', true);
+    enemys.setAll('outOfBoundsKill', true);
+}
+
+function setupEnemyBullets(){
+	enemyBullets = game.add.group();
+    enemyBullets.enableBody = true;
+    enemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
+
+    enemyBullets.createMultiple(100, 'enemy_bullet');
+    enemyBullets.setAll('checkWorldBounds', true);
+    enemyBullets.setAll('outOfBoundsKill', true);
 }
 
 </script>
