@@ -23,13 +23,14 @@ function preload() {
     game.load.image('bullet', '/assets/bullet.png');
 		game.load.image('player', '/assets/THSR.png');
 		game.load.image('enemy1', '/assets/EMU800.png');
+		game.load.image('enemy2', '/assets/EMU700.png');
 		game.load.image('enemy_bullet', '/assets/bullet2.png');
 		game.load.image('square', '/assets/tile_question_box.png');
     game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
 }
 
 var player, bullets;
-var enemys, enemyBullets;
+var enemys = new Array(), enemyBullets;
 var lives;
 const MAX_LIFE = 3;
 var weaponLevel = 0;
@@ -50,6 +51,7 @@ var nextFire = 0;
 //var enemyRate = 1000;
 var nextEnemy = 0;
 var nextBox = 0;
+var nextEnemy2 = 0;
 
 function create() {
 	setupBackground();
@@ -92,8 +94,10 @@ function update() {
 
 	add_boxes();
 
-	game.physics.arcade.overlap(bullets, enemys, enemyHit, null, this);
-	game.physics.arcade.overlap(player, enemys, playerHit, null, this);
+	for (var i=0;i<2;i++){
+		game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this);
+		game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
+	}
 	game.physics.arcade.overlap(player, enemyBullets, playerHit, null, this);
 	game.physics.arcade.overlap(player, boxes, upgradeWeapon, null, this);
 }
@@ -141,9 +145,9 @@ function add_boxes()	{
 }
 
 function spawn_enemy() {
-	if (game.time.now > nextEnemy && enemys.countDead() > 0) {
-        nextEnemy = game.time.now + game.rnd.integerInRange(1500, 3000);
-        var enemy = enemys.getFirstExists(false);
+	if (game.time.now > nextEnemy && enemys[0].countDead() > 0) {
+        nextEnemy = game.time.now + game.rnd.integerInRange(1000, 3000);
+        var enemy = enemys[0].getFirstExists(false);
         // spawn at a random location top of the screen
         enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0);
         // also randomize the speed
@@ -151,17 +155,37 @@ function spawn_enemy() {
 
 				enemy.enemyNextFire = 0;
     }
+	if (game.time.now > nextEnemy2 && enemys[1].countDead() > 0) {
+        nextEnemy2 = game.time.now + game.rnd.integerInRange(2000, 4000);
+        var enemy = enemys[1].getFirstExists(false);
+        // spawn at a random location top of the screen
+        enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0);
+		var target = game.rnd.integerInRange(20, game.width - 20);
+		enemy.rotation = game.physics.arcade.moveToXY(
+		  enemy, target, game.height,
+		  game.rnd.integerInRange(40, 80)
+		) - Math.PI / 2;
+
+		enemy.enemyNextFire = 0;
+    }
 }
 
 function enemy_fire() {
-	enemys.forEachAlive(function (enemy) {
+	enemys[0].forEachAlive(function (enemy) {
 		if (game.time.now > enemy.enemyNextFire && enemyBullets.countDead() > 0){
-			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(1000, 5000);
+			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(1000, 3000);
 			var enemy_bullet = enemyBullets.getFirstDead();
 			enemy_bullet.reset(enemy.x+13, enemy.y + 32);
-			var distance = Math.sqrt((player.x - enemy.x)*(player.x - enemy.x) + (player.y - enemy.y)*(player.y - enemy.y));
-			enemy_bullet.body.velocity.x = 400*(player.x - enemy.x)/distance;
-			enemy_bullet.body.velocity.y = 400*(player.y - enemy.y)/distance;
+			enemy_bullet.body.velocity.y=400;
+		}
+	}, this);
+
+	enemys[1].forEachAlive(function (enemy) {
+		if (game.time.now > enemy.enemyNextFire && enemyBullets.countDead() > 0){
+			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(2000, 5000);
+			var enemy_bullet = enemyBullets.getFirstDead();
+			enemy_bullet.reset(enemy.x+13, enemy.y + 32);
+			game.physics.arcade.moveToObject(enemy_bullet, player, 400);
 		}
 	}, this);
 }
@@ -222,13 +246,15 @@ function setupBullets(){
 }
 
 function setupEnemys(){
-	enemys = game.add.group();
-    enemys.enableBody = true;
-    enemys.physicsBodyType = Phaser.Physics.ARCADE;
+	for(var i=1;i<=2;i++){
+		enemys[i-1] = game.add.group();
+		enemys[i-1].enableBody = true;
+		enemys[i-1].physicsBodyType = Phaser.Physics.ARCADE;
 
-    enemys.createMultiple(20, 'enemy1');
-    enemys.setAll('checkWorldBounds', true);
-    enemys.setAll('outOfBoundsKill', true);
+		enemys[i-1].createMultiple(20, 'enemy'+i);
+		enemys[i-1].setAll('checkWorldBounds', true);
+		enemys[i-1].setAll('outOfBoundsKill', true);
+	}
 }
 
 function setupEnemyBullets(){
