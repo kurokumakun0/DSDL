@@ -20,17 +20,22 @@ var socket = io();
 
 function preload() {
     game.load.image('sky', '/assets/sky.png');
-    game.load.image('bullet', '/assets/bullet.png');
+    game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');
 		game.load.image('player', '/assets/THSR.png');
 		game.load.image('enemy1', '/assets/EMU800.png');
 		game.load.image('enemy2', '/assets/EMU700.png');
-		game.load.image('enemy_bullet', '/assets/bullet2.png');
+		game.load.image('enemy3', '/assets/shump_assets/mob_flagship_1.png');
+		game.load.image('enemy_bullet1', '/assets/bullet.png');
+		game.load.image('enemy_bullet2', '/assets/mob_bullet_2.png');
 		game.load.image('square', '/assets/tile_question_box.png');
-    game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
+		game.load.spritesheet('bonus_cube', 'assets/cubes.png', 24, 24);
+    //game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
+		//game.load.spritesheet('player_bullet', '/assets/shump_assets/player_bullets.png');
 }
 
 var player, bullets;
-var enemys = new Array(), enemyBullets;
+var enemys = new Array(), enemyBullets = new Array();
+var enemy_num = [20, 10, 2];
 var lives;
 const MAX_LIFE = 3;
 var weaponLevel = 0;
@@ -49,9 +54,8 @@ var nextFire = 0;
 //var enemyNextFire = 0;
 
 //var enemyRate = 1000;
-var nextEnemy = 0;
+var nextEnemy = 0, nextEnemy2 = 0, nextEnemy3 = 100000;
 var nextBox = 0;
-var nextEnemy2 = 0;
 
 function create() {
 	setupBackground();
@@ -94,12 +98,15 @@ function update() {
 
 	add_boxes();
 
-	for (var i=0;i<2;i++){
+	for (var i=0;i<3;i++){
 		game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this);
 		game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
 	}
-	game.physics.arcade.overlap(player, enemyBullets, playerHit, null, this);
-	game.physics.arcade.overlap(player, boxes, upgradeWeapon, null, this);
+	for( var i = 0 ; i < 2;  i ++ )	{
+		game.physics.arcade.overlap(player, enemyBullets[i], playerHit, null, this);
+	}
+
+	game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this);
 }
 
 function fire() {
@@ -145,7 +152,7 @@ function add_boxes()	{
 }
 
 function spawn_enemy() {
-	if (game.time.now > nextEnemy && enemys[0].countDead() > 0) {
+		if (game.time.now > nextEnemy && enemys[0].countDead() > 0) {
         nextEnemy = game.time.now + game.rnd.integerInRange(1000, 3000);
         var enemy = enemys[0].getFirstExists(false);
         // spawn at a random location top of the screen
@@ -155,37 +162,57 @@ function spawn_enemy() {
 
 				enemy.enemyNextFire = 0;
     }
-	if (game.time.now > nextEnemy2 && enemys[1].countDead() > 0) {
+		if (game.time.now > nextEnemy2 && enemys[1].countDead() > 0) {
         nextEnemy2 = game.time.now + game.rnd.integerInRange(2000, 4000);
         var enemy = enemys[1].getFirstExists(false);
         // spawn at a random location top of the screen
         enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0);
-		var target = game.rnd.integerInRange(20, game.width - 20);
-		enemy.rotation = game.physics.arcade.moveToXY(
-		  enemy, target, game.height,
-		  game.rnd.integerInRange(40, 80)
-		) - Math.PI / 2;
+				var target = game.rnd.integerInRange(20, game.width - 20);
+				enemy.rotation = game.physics.arcade.moveToXY(
+				  enemy, target, game.height,
+				  game.rnd.integerInRange(40, 80)
+				) - Math.PI / 2;
 
-		enemy.enemyNextFire = 0;
+				enemy.enemyNextFire = 0;
     }
+
+		if (game.time.now > nextEnemy3 && enemys[2].countDead() > 0) {
+			nextEnemy3 = game.time.now + game.rnd.integerInRange(100000, 300000);
+			var enemy = enemys[2].getFirstExists(false);
+			// spawn at a random location top of the screen
+			enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0);
+			// also randomize the speed
+			enemy.body.velocity.y = game.rnd.integerInRange(10, 20);
+
+			enemy.enemyNextFire = 0;
+	  }
 }
 
 function enemy_fire() {
 	enemys[0].forEachAlive(function (enemy) {
-		if (game.time.now > enemy.enemyNextFire && enemyBullets.countDead() > 0){
+		if (game.time.now > enemy.enemyNextFire && enemyBullets[0].countDead() > 0){
 			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(1000, 3000);
-			var enemy_bullet = enemyBullets.getFirstDead();
+			var enemy_bullet = enemyBullets[0].getFirstDead();
 			enemy_bullet.reset(enemy.x+13, enemy.y + 32);
 			enemy_bullet.body.velocity.y=400;
 		}
 	}, this);
 
 	enemys[1].forEachAlive(function (enemy) {
-		if (game.time.now > enemy.enemyNextFire && enemyBullets.countDead() > 0){
+		if (game.time.now > enemy.enemyNextFire && enemyBullets[0].countDead() > 0){
 			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(2000, 5000);
-			var enemy_bullet = enemyBullets.getFirstDead();
+			var enemy_bullet = enemyBullets[0].getFirstDead();
 			enemy_bullet.reset(enemy.x+13, enemy.y + 32);
 			game.physics.arcade.moveToObject(enemy_bullet, player, 400);
+		}
+	}, this);
+
+	enemys[2].forEachAlive(function (enemy) {
+		if (game.time.now > enemy.enemyNextFire && enemyBullets[1].countDead() > 0){
+			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(5000, 10000);
+			var enemy_bullet = enemyBullets[1].getFirstDead();
+			enemy_bullet.reset(enemy.x+13, enemy.y + 32);
+			game.physics.arcade.moveToObject(enemy_bullet, player, 300);
 		}
 	}, this);
 }
@@ -194,7 +221,7 @@ function enemyHit(bullet, enemy) {
 	bullet.kill();
 	enemy.kill();
 	score += 10;
-    scoreText.text = 'Score: ' + score;
+  scoreText.text = 'Score: ' + score;
 	if(score > (weaponLevel+1)*100 && weaponLevel < MAX_WEAPON_LEVEL){
 		weaponLevel++;
 	}
@@ -211,8 +238,10 @@ function playerHit(player, enemy) {
     }
 }
 
-function upgradeWeapon(player, box)	{
+function PlayerVsBox(player, box)	{
 	box.kill();
+	score += 50;
+  scoreText.text = 'Score: ' + score;
 	if( weaponLevel < MAX_WEAPON_LEVEL )
 		weaponLevel ++;
 }
@@ -246,25 +275,27 @@ function setupBullets(){
 }
 
 function setupEnemys(){
-	for(var i=1;i<=2;i++){
+	for(var i=1;i<=3;i++){
 		enemys[i-1] = game.add.group();
 		enemys[i-1].enableBody = true;
 		enemys[i-1].physicsBodyType = Phaser.Physics.ARCADE;
 
-		enemys[i-1].createMultiple(20, 'enemy'+i);
+		enemys[i-1].createMultiple(enemy_num[i-1], 'enemy'+i);
 		enemys[i-1].setAll('checkWorldBounds', true);
 		enemys[i-1].setAll('outOfBoundsKill', true);
 	}
 }
 
 function setupEnemyBullets(){
-	enemyBullets = game.add.group();
-    enemyBullets.enableBody = true;
-    enemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
+	for( var i = 0 ; i < 2 ; i ++ )	{
+		enemyBullets[i] = game.add.group();
+		enemyBullets[i].enableBody = true;
+		enemyBullets[i].physicsBodyType = Phaser.Physics.ARCADE;
 
-    enemyBullets.createMultiple(100, 'enemy_bullet');
-    enemyBullets.setAll('checkWorldBounds', true);
-    enemyBullets.setAll('outOfBoundsKill', true);
+		enemyBullets[i].createMultiple(100, 'enemy_bullet' + (i+1) );
+		enemyBullets[i].setAll('checkWorldBounds', true);
+		enemyBullets[i].setAll('outOfBoundsKill', true);
+	}
 }
 
 function setupPlayerLives(){
@@ -284,6 +315,7 @@ function setupBoxes() {
 
 	boxes.createMultiple(4, 'square');
 	boxes.setAll('body.collideWorldBounds', true);
+	boxes.setAll('outOfBoundsKill', true);
 	boxes.setAll('body.bounce.x', 1);
 	boxes.setAll('body.bounce.y', 1);
 }
