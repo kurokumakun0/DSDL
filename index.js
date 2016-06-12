@@ -34,10 +34,10 @@ io.on('connection', function(socket){
     //console.log('Y: ' + msg);
 	io.emit('setY', msg);
   });
-  socket.on('Z', function(msg){
+  /*socket.on('Z', function(msg){
     //console.log('Z: ' + msg);
 	io.emit('connectOK', 'OK');
-  });
+  });*/
   /*socket.on('zShift', function(msg){
     console.log('zShift: ' + msg);
     io.emit('change_zShift', {
