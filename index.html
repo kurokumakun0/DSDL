@@ -31,6 +31,8 @@ var player;
 var bullets;
 var enemys;
 var enemyBullets;
+var lives;
+const MAX_LIFE = 3;
 
 var score = 0;
 var scoreText;
@@ -52,6 +54,7 @@ function create() {
 	setupBullets();
 	setupEnemys();
 	setupEnemyBullets();
+	setupPlayerLives();
 	
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
 }
@@ -122,11 +125,14 @@ function enemyHit(bullet, enemy) {
 }
 
 function playerHit(player, enemy) {
-	player.kill();
 	enemy.kill();
-	//Temporary Gameover message, will be overlapped if bullet hit enemy after death.
-    scoreText.text = 'Score: ' + score;
-	gameOver();
+	var life = lives.getFirstAlive();
+    if (life !== null) {
+      life.kill();
+    } else {
+      player.kill();
+	  gameOver();
+    }
 }
 
 function gameOver(){
@@ -151,7 +157,7 @@ function setupBullets(){
     bullets.enableBody = true;
     bullets.physicsBodyType = Phaser.Physics.ARCADE;
 
-    bullets.createMultiple(50, 'bullet');
+    bullets.createMultiple(20, 'bullet');
     bullets.setAll('checkWorldBounds', true);
     bullets.setAll('outOfBoundsKill', true);
 }
@@ -161,7 +167,7 @@ function setupEnemys(){
     enemys.enableBody = true;
     enemys.physicsBodyType = Phaser.Physics.ARCADE;
 
-    enemys.createMultiple(50, 'enemy1');
+    enemys.createMultiple(20, 'enemy1');
     enemys.setAll('checkWorldBounds', true);
     enemys.setAll('outOfBoundsKill', true);
 }
@@ -171,9 +177,19 @@ function setupEnemyBullets(){
     enemyBullets.enableBody = true;
     enemyBullets.physicsBodyType = Phaser.Physics.ARCADE;
 
-    enemyBullets.createMultiple(100, 'enemy_bullet');
+    enemyBullets.createMultiple(30, 'enemy_bullet');
     enemyBullets.setAll('checkWorldBounds', true);
     enemyBullets.setAll('outOfBoundsKill', true);
+}
+
+function setupPlayerLives(){
+	lives = game.add.group();
+	var firstLifeIconX = this.game.width - 10 - (MAX_LIFE * 30);
+	for (var i = 0; i < MAX_LIFE; i++) {
+		var lifeIcon = this.lives.create(firstLifeIconX + (30 * i), 30, 'player');
+		lifeIcon.scale.setTo(0.8, 0.8);
+		lifeIcon.anchor.setTo(0.5, 0.5);
+	}
 }
 
 </script>
