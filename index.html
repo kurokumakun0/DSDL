@@ -24,12 +24,12 @@ function preload() {
 	game.load.image('player', '/assets/THSR.png');
 	game.load.image('enemy1', '/assets/EMU800.png');
     //game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
-
 }
 
 var player;
 var bullets;
 var enemys;
+var enemyBullets;
 
 var score = 0;
 var scoreText;
@@ -87,6 +87,7 @@ function update() {
 	spawn_enemy();
 	
 	game.physics.arcade.overlap(bullets, enemys, enemyHit, null, this);
+	game.physics.arcade.overlap(player, enemys, playerHit, null, this);
 }
 
 function fire() {
@@ -114,6 +115,12 @@ function enemyHit(bullet, enemy) {
 	enemy.kill();
 	score += 10;
     scoreText.text = 'Score: ' + score;
+}
+
+function playerHit(player, enemy) {
+	player.kill();
+	enemy.kill();
+    scoreText.text = 'Score: ' + score + '\nGameover';
 }
 
 </script>
