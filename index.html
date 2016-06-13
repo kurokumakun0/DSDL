@@ -50,6 +50,7 @@ var score = 0;
 var scoreText;
 
 var gameOverText;
+var gamestart;
 
 var fireRate = 100;
 var nextFire = 0;
@@ -86,21 +87,26 @@ function update() {
     });
 	socket.on('start', function(data) {
 		state=0;
-		setupMenu();
-	}
+		if( !player.alive )	{
+			setupPlayer();
+			setupBullets();
+			setupPlayerLives();
+			gameOverText.kill();
+		}
+		resetMenu();
+	});
 	socket.on('shoot', function(data) {
-
 		if(state===0){
 			state=1;
 			gamestart.kill();
 		} else{
 			fire();
-			if( !player.alive )	{
+			/*if( !player.alive )	{
 				setupPlayer();
 				setupBullets();
 				setupPlayerLives();
-				gameOverText.kill();
-			}
+				//gameOverText.kill();
+			}*/
 		}
   });
 
@@ -418,6 +424,10 @@ function setupExplosions() {
 function setupMenu(){
 	gamestart = game.add.sprite(game.width/2, game.height / 2, 'gamestart');
 	gamestart.anchor.setTo(0.5, 0.5);
+}
+
+function resetMenu(){
+	gamestart.reset(game.width/2, game.height / 2);
 }
 
 </script>
