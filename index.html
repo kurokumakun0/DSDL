@@ -64,7 +64,7 @@ var ultsign;
 var ultsign_g;
 var gameOverText;
 var gamestart;
-
+var weaponMode=0;
 var fireRate = 100;
 var nextFire = 0;
 
@@ -156,41 +156,45 @@ function update() {
 }
 
 function fire() {
-	/*if (player.alive && game.time.now > nextFire && bullets.countDead() > 0){
-		nextFire = game.time.now + fireRate;
-		var bullet = bullets.getFirstDead();
-		bullet.reset(player.x , player.y - 10);
-		bullet.body.velocity.y = -player_bullet_velocity;
-		if (this.bullets.countDead() < weaponLevel * 2) {
-			return;
-		}
-		for (var i = 1; i <= weaponLevel; i++) {
-			bullet = bullets.getFirstExists(false);
-			// spawn left bullet slightly left off center
-			bullet.reset(player.x - i * 6, player.y - 10);
-			// the left bullets spread from -95 degrees to -135 degrees
-			game.physics.arcade.velocityFromAngle(
-				-95 - i * 10, player_bullet_velocity, bullet.body.velocity
-			);
+	if(weaponMode===0){
+		if (player.alive && game.time.now > nextFire && bullets.countDead() > 0){
+			nextFire = game.time.now + fireRate;
+			var bullet = bullets.getFirstDead();
+			bullet.reset(player.x , player.y - 10);
+			bullet.body.velocity.y = -player_bullet_velocity;
+			if (this.bullets.countDead() < weaponLevel * 2) {
+				return;
+			}
+			for (var i = 1; i <= weaponLevel; i++) {
+				bullet = bullets.getFirstExists(false);
+				// spawn left bullet slightly left off center
+				bullet.reset(player.x - i * 6, player.y - 10);
+				// the left bullets spread from -95 degrees to -135 degrees
+				game.physics.arcade.velocityFromAngle(
+					-95 - i * 10, player_bullet_velocity, bullet.body.velocity
+				);
 
-			bullet = bullets.getFirstExists(false);
-			// spawn right bullet slightly right off center
-			bullet.reset(player.x + i * 6, player.y - 10);
-			// the right bullets spread from -85 degrees to -45
-			game.physics.arcade.velocityFromAngle(
-				-85 + i * 10, player_bullet_velocity, bullet.body.velocity
-			);
+				bullet = bullets.getFirstExists(false);
+				// spawn right bullet slightly right off center
+				bullet.reset(player.x + i * 6, player.y - 10);
+				// the right bullets spread from -85 degrees to -45
+				game.physics.arcade.velocityFromAngle(
+					-85 + i * 10, player_bullet_velocity, bullet.body.velocity
+				);
+			}
 		}
-	}*/
-	if (player.alive && game.time.now > nextFire && lbs.countDead() > 0){
-		nextFire = game.time.now + fireRate;
-		var lb = lbs.getFirstDead();
-		lb.reset(player.x , player.y - 10);
-		lb.body.velocity.y = -player_bullet_velocity*3;
-		if (this.lbs.countDead() < weaponLevel * 2) {
-			return;
+	}
+	else if(weaponMode===1){
+		if (player.alive && game.time.now > nextFire && lbs.countDead() > 0){
+			nextFire = game.time.now + fireRate;
+			var lb = lbs.getFirstDead();
+			lb.reset(player.x , player.y - 10);
+			lb.body.velocity.y = -player_bullet_velocity*5;
+			if (this.lbs.countDead() < weaponLevel * 2) {
+				return;
+			}
+			lb.scale.setTo(1+0.5*weaponLevel,1);
 		}
-		lb.scale.setTo(1+0.5*weaponLevel,1);
 	}
 }
 
@@ -389,6 +393,7 @@ function PlayerVsBox(player, box)	{
 		case yellow:
 			break;
 		case orange:
+			weaponLevel--;
 			heal();
 			break;
 		case green:
@@ -396,6 +401,8 @@ function PlayerVsBox(player, box)	{
 		case chocolate:
 			break;
 		case blue:
+			weaponLevel--;
+			swap();
 			break;
 		case dark_blue:
 			break;
@@ -414,6 +421,11 @@ function heal()	{
 		var newlife = lives.getChildAt(dead_lives-1);
 		newlife.reset(this.game.width - 10 - (MAX_LIFE * 30) + 30*(dead_lives-1) , 30);
 	}
+}
+
+function swap(){
+	if(weaponMode === 0) weaponMode=1;
+	else weaponMode=0;
 }
 
 function explode(sprite) {
