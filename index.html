@@ -20,7 +20,7 @@ var socket = io();
 
 function preload() {
     game.load.image('gamestart', '/assets/gamestart.png');
-    game.load.image('sky', '/assets/seatiles.jpg');
+    game.load.image('sky', '/assets/seatiles.png');
     game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');
 		game.load.image('player', '/assets/THSR.png');
 		game.load.image('enemy1', '/assets/EMU800.png');
@@ -35,6 +35,7 @@ function preload() {
 		//game.load.spritesheet('player_bullet', '/assets/shump_assets/player_bullets.png');
 }
 
+var background;
 var player, bullets;
 var enemys = new Array(), enemyBullets = new Array();
 var enemy_num = [20, 10, 2];
@@ -79,6 +80,8 @@ var newX = 0;
 var newY = 0;
 
 function update() {
+	//scroll background
+	background.tilePosition.y += 2;
     socket.on('setX', function(data) {
 		newX = parseFloat(data);
     });
@@ -330,8 +333,9 @@ function setupBackground(){
 	// Stretch to fill
   //game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
 
-	var sky = game.add.sprite(0, 0, 'sky');
-	sky.scale.setTo(window.innerWidth/sky.width, window.innerHeight/sky.height);
+	background = game.add.tileSprite(0, 0, window.innerWidth, window.innerHeight, 'sky');
+	background.tileScale.x = window.innerWidth/background.width;
+	background.tileScale.y = window.innerHeight/background.height;
 }
 
 function setupPlayer(){
