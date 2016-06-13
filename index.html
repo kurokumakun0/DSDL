@@ -23,19 +23,20 @@ function preload() {
     game.load.image('gamestart', '/assets/gamestart.png');
     game.load.image('sky', '/assets/seatiles.png');
     game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');
-	game.load.image('lb', '/assets/lb.png');
-	game.load.image('player', '/assets/THSR.png');
-	game.load.image('enemy1', '/assets/EMU800.png');
-	game.load.image('enemy2', '/assets/EMU700.png');
-	game.load.image('enemy3', '/assets/shump_assets/mob_flagship_1.png');
-	game.load.image('enemy_bullet1', '/assets/bullet.png');
-	game.load.image('enemy_bullet2', '/assets/shump_assets/mob_bullet_2.png');
-	game.load.image('square', '/assets/tile_question_box.png');
-	game.load.image('ultsign', '/assets/50ult.png');
-	game.load.image('ultsign_g', '/assets/50ult_gray.png');
+		game.load.image('lb', '/assets/lb.png');
+		game.load.image('player', '/assets/THSR.png');
+		game.load.image('enemy1', '/assets/EMU800.png');
+		game.load.image('enemy2', '/assets/EMU700.png');
+		game.load.image('enemy3', '/assets/shump_assets/mob_flagship_1.png');
+		game.load.spritesheet('enemy4', '/assets/shump_assets/mob_turret_1.png', 24, 24);
+		game.load.image('enemy_bullet1', '/assets/bullet.png');
+		game.load.image('enemy_bullet2', '/assets/shump_assets/mob_bullet_2.png');
+		game.load.image('square', '/assets/tile_question_box.png');
+		game.load.image('ultsign', '/assets/50ult.png');
+		game.load.image('ultsign_g', '/assets/50ult_gray.png');
 
-	game.load.spritesheet('bonus_cube', 'assets/shump_assets/cubes.png', 24, 24);
-	game.load.spritesheet('explosion', 'assets/shump_assets/explosion_1.png', 32, 32);
+		game.load.spritesheet('bonus_cube', 'assets/shump_assets/cubes.png', 24, 24);
+		game.load.spritesheet('explosion', 'assets/shump_assets/explosion_1.png', 32, 32);
     //game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
 	//game.load.spritesheet('player_bullet', '/assets/shump_assets/player_bullets.png');
 }
@@ -45,7 +46,7 @@ var player_bullet_velocity = 750;
 var background;
 var player, bullets, lbs;
 var enemys = new Array(), enemyBullets = new Array();
-var enemy_num = [20, 10, 2];
+var enemy_num = [20, 10, 2, 5];
 var lives;
 const MAX_LIFE = 3;
 var weaponLevel = 0;
@@ -53,7 +54,7 @@ const MAX_WEAPON_LEVEL = 4;
 var boxes;
 const yellow = 0, orange = 1, green = 2, chocolate = 3, blue = 4, dark_blue = 5, gray = 6;
 var explosionPool;
-const ENEMY_1_HEALTH = 1, ENEMY_2_HEALTH = 5, ENEMY_3_HEALTH = 500;
+const ENEMY_1_HEALTH = 1, ENEMY_2_HEALTH = 3, ENEMY_3_HEALTH = 500, ENEMY_4_HEALTH = 5;
 var state = 0;
 var score = 0;
 var scoreText;
@@ -72,7 +73,7 @@ var nextFire = 0;
 //var enemyNextFire = 0;
 
 //var enemyRate = 1000;
-var nextEnemy = 0, nextEnemy2 = 0, nextEnemy3 = 10000;
+var nextEnemy = 0, nextEnemy2 = 0, nextEnemy3 = 10000, nextEnemy4 = 0;
 var nextBox = 0;
 
 function create() {
@@ -97,6 +98,10 @@ var newY = 0;
 function update() {
 	//scroll background
 	background.tilePosition.y += 2;
+	enemys[3].forEachAlive(function(enemy)	{
+		enemy.position.y += 2;
+	}, this);
+
     socket.on('setX', function(data) {
 		newX = parseFloat(data);
     });
@@ -113,7 +118,7 @@ function update() {
 			setupPlayer();
 			weaponLevel=0;
 			score=0;
-			
+
 			setupBullets();
 			setupPlayerLives();
 			gameOverText.kill();
@@ -252,7 +257,7 @@ function add_boxes()	{
 			game.rnd.integerInRange(180, 360), 50, box.body.velocity
 		);
 
-		game.time.events.add(Phaser.Timer.SECOND * 20, fadeBox, this, box);
+		game.time.events.add(Phaser.Timer.SECOND * 60, fadeBox, this, box);
 	}
 }
 
@@ -284,7 +289,6 @@ function spawn_enemy() {
 
 				enemy.enemyNextFire = 0;
     }
-
 		if (game.time.now > nextEnemy3 && enemys[2].countDead() > 0) {
 			nextEnemy3 = game.time.now + game.rnd.integerInRange(60000, 120000);
 			var enemy = enemys[2].getFirstExists(false);
@@ -295,6 +299,45 @@ function spawn_enemy() {
 
 			enemy.enemyNextFire = 0;
 	  }
+		if (game.time.now > nextEnemy4 && enemys[3].countDead() > 0) {
+			nextEnemy4 = game.time.now + game.rnd.integerInRange(3000, 5000);
+			var enemy = enemys[3].getFirstExists(false);
+			// spawn at a random location top of the screen
+			enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0, ENEMY_4_HEALTH);
+
+			enemy.enemyNextFire = 0;
+
+			// animation
+			enemy.animations.add('enemy4', [0, 1, 2, 3, 4, 5, 6, 7, 8], 9, true);
+
+			//timer
+			game.time.events.loop(Phaser.Timer.SECOND * 5, enemy4_attack, this, enemy);
+	  }
+}
+
+function enemy4_attack(enemy)	{
+	enemy.play('enemy4', 9, true, false);
+
+	if ( enemyBullets[1].countDead() > 0 ){
+		for( var i = 0 ; i < 3 ; i ++ )	{
+			//  left
+			var enemy_bullet = enemyBullets[1].getFirstDead();
+			enemy_bullet.reset(enemy.x - i*30, enemy.y );
+			enemy_bullet.body.velocity.x = -200;
+			// right
+			enemy_bullet = enemyBullets[1].getFirstDead();
+			enemy_bullet.reset(enemy.x + i*30, enemy.y );
+			enemy_bullet.body.velocity.x = 200;
+			// bottom
+			enemy_bullet = enemyBullets[1].getFirstDead();
+			enemy_bullet.reset(enemy.x, enemy.y + i*30);
+			enemy_bullet.body.velocity.y = 200;
+			// top
+			enemy_bullet = enemyBullets[1].getFirstDead();
+			enemy_bullet.reset(enemy.x, enemy.y - i*30);
+			enemy_bullet.body.velocity.y = -200;
+		}
+	}
 }
 
 function enemy_fire() {
@@ -489,7 +532,7 @@ function setupLbs(){
 }
 
 function setupEnemys(){
-	for(var i=0;i<3;i++){
+	for(var i=0;i<4;i++){
 		enemys[i] = game.add.group();
 		enemys[i].enableBody = true;
 		enemys[i].physicsBodyType = Phaser.Physics.ARCADE;
@@ -499,8 +542,9 @@ function setupEnemys(){
 		enemys[i].setAll('outOfBoundsKill', true);
 		enemys[i].setAll('anchor.x', 0.5);
 		enemys[i].setAll('anchor.y', 0.5);
-		enemys[i].setAll('scale.x', 1.5);
-		enemys[i].setAll('scale.y', 1.5);
+		enemys[i].setAll('scale.x', (i == 2) ? 3 : 1.5);
+		enemys[i].setAll('scale.y', (i == 2) ? 3 : 1.5);
+
 	}
 }
 
