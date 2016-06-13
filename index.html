@@ -403,8 +403,8 @@ function setupEnemys(){
 		enemys[i].setAll('outOfBoundsKill', true);
 		enemys[i].setAll('anchor.x', 0.5);
 		enemys[i].setAll('anchor.y', 0.5);
-		enemys[i].setAll('scale.x', 1.5);
-		enemys[i].setAll('scale.y', 1.5);
+		enemys[i].setAll('scale.x', (i == 2) ? 4 : 1.5);
+		enemys[i].setAll('scale.y', (i == 2) ? 4 : 1.5);
 	}
 }
 
