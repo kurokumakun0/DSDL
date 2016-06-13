@@ -148,7 +148,10 @@ function add_boxes()	{
 		// spawn at a random location top of the screen
 		box.reset(game.rnd.integerInRange(20, game.width - 20), 0);
 		box.scale.setTo(1.5, 1.5);
+		var rnd = game.rnd.integerInRange(0, 6);
+		box.animations.add('box', [rnd*3, rnd*3+1, rnd*3+2], 21, true);
 		box.play('box', 15, true, false);
+		box.type = rnd;
 		// also randomize the speed
 		game.physics.arcade.velocityFromAngle(
 			game.rnd.integerInRange(180, 360), 50, box.body.velocity
@@ -270,6 +273,13 @@ function playerHitbullet(player, bullet) {
 }
 
 function PlayerVsBox(player, box)	{
+	//if( box.type === 2 )	{
+		var dead_lives = lives.countDead();
+		if( dead_lives > 0 ) 	{
+			var newlife = lives.getChildAt(dead_lives-1);
+			newlife.reset(this.game.width - 10 - (MAX_LIFE * 30) + 30*(dead_lives-1) , 30);
+		}
+	//}
 	box.kill();
 	score += 50;
   scoreText.text = 'Score: ' + score;
@@ -371,9 +381,9 @@ function setupBoxes() {
 	boxes.setAll('outOfBoundsKill', true);
 	boxes.setAll('body.bounce.x', 1);
 	boxes.setAll('body.bounce.y', 1);
-	boxes.forEach(function(box)	{
-		box.animations.add('box');
-	});
+	/*boxes.forEach(function(box)	{
+		box.animations.add('box', [0, 1, 2], 21, true);
+	}); */
 }
 
 function setupExplosions() {
