@@ -312,6 +312,7 @@ function setupPlayer(){
 	//game.player.body.setSize(20, 20, 0, -5);
 	player.anchor.x = 0.5;
 	player.anchor.y = 0.5;
+	player.scale.setTo(1.5, 1.5);
 }
 
 function setupBullets(){
@@ -335,6 +336,8 @@ function setupEnemys(){
 		enemys[i].setAll('outOfBoundsKill', true);
 		enemys[i].setAll('anchor.x', 0.5);
 		enemys[i].setAll('anchor.y', 0.5);
+		enemys[i].setAll('scale.x', 1.5);
+		enemys[i].setAll('scale.y', 1.5);
 	}
 }
 
