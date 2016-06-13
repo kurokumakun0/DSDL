@@ -52,7 +52,7 @@ const ENEMY_1_HEALTH = 1, ENEMY_2_HEALTH = 5, ENEMY_3_HEALTH = 500;
 var state = 0;
 var score = 0;
 var scoreText;
-
+var ult=0;
 var gameOverText;
 var gamestart;
 
@@ -95,6 +95,9 @@ function update() {
 		state=0;
 		if( !player.alive )	{
 			setupPlayer();
+			weaponLevel=0;
+			score=0;
+			
 			setupBullets();
 			setupPlayerLives();
 			gameOverText.kill();
@@ -103,20 +106,17 @@ function update() {
 	});
 	socket.on('shoot', function(data) {
 		if(state===0){
+			game.time.events.add(Phaser.Timer.SECOND * 3, fillult, this);
 			state=1;
 			gamestart.kill();
 		} else{
 			fire();
-			/*if( !player.alive )	{
-				setupPlayer();
-				setupBullets();
-				setupPlayerLives();
-				//gameOverText.kill();
-			}*/
 		}
   });
+	scoreText.text = 'Score: ' + score;
 
     if(state===1){
+
 		player.body.velocity.x = 10*(-newY);
 		player.body.velocity.y = 10*(-newX);
 
@@ -138,6 +138,16 @@ function update() {
 }
 
 function fire() {
+	
+	
+	/*if(ult===1){
+		enemys[0].forEachAlive(function (enemy) {
+			explode(enemy);
+			enemy.kill();
+		}, this);
+		ult=0;
+	}*/
+	
 	if (player.alive && game.time.now > nextFire && bullets.countDead() > 0){
 		nextFire = game.time.now + fireRate;
 		var bullet = bullets.getFirstDead();
@@ -164,6 +174,27 @@ function fire() {
 			);
 		}
 	}
+}
+
+function fillult(){
+
+}
+
+function launchult(){
+	enemys[0].forEachAlive(function (enemy) {
+		explode(enemy);
+		enemy.kill();
+		score+=10;
+	}, this);
+	enemys[1].forEachAlive(function (enemy) {
+		explode(enemy);
+		enemy.kill();
+		score+=10;
+	}, this);
+	enemyBullets[0].forEachAlive(function (bullet) {
+		explode(bullet);
+		bullet.kill();
+	}, this);
 }
 
 function add_boxes()	{
@@ -268,7 +299,6 @@ function enemyHit(bullet, enemy) {
 	//if (enemy.alive) play hit animation(not available yet) else play explode animation
 	explode(enemy);
 	score += 10;
-  scoreText.text = 'Score: ' + score;
 }
 
 function playerHit(player, enemy) {
@@ -331,7 +361,6 @@ function PlayerVsBox(player, box)	{
 	}
 	box.kill();
 	score += 50;
-  scoreText.text = 'Score: ' + score;
 	if( weaponLevel < MAX_WEAPON_LEVEL )
 		weaponLevel ++;
 }
