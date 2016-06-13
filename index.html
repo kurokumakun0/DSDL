@@ -231,16 +231,21 @@ function enemyHit(bullet, enemy) {
 function playerHit(player, enemy) {
 	explode(enemy);
 	enemy.kill();
+	player.kill();
+
 	var life = lives.getFirstAlive();
     if (life !== null) {
-		life.kill();
-		explode(player);
-		socket.emit('vibrate', 'hit');
+			life.kill();
+			explode(player);
+			socket.emit('vibrate', 'hit');
+
+			// re alive player
+			setupPlayer();
     } else {
-		explode(player);
-		player.kill();
-		socket.emit('vibrate', 'die');
-		gameOver();
+			//player.kill();
+			explode(player);
+			socket.emit('vibrate', 'die');
+			gameOver();
     }
 }
 
