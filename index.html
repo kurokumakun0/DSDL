@@ -19,7 +19,7 @@ var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '
 var socket = io();
 
 function preload() {
-    game.load.image('sky', '/assets/sky.png');
+    game.load.image('sky', '/assets/seatiles.jpg');
     game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');
 		game.load.image('player', '/assets/THSR.png');
 		game.load.image('enemy1', '/assets/EMU800.png');
@@ -294,8 +294,11 @@ function gameOver(){
 
 function setupBackground(){
 	game.physics.startSystem(Phaser.Physics.ARCADE);
+	// Stretch to fill
+  //game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
+
 	var sky = game.add.sprite(0, 0, 'sky');
-	sky.scale.setTo(2,2);
+	sky.scale.setTo(window.innerWidth/sky.width, window.innerHeight/sky.height);
 }
 
 function setupPlayer(){
