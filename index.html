@@ -231,10 +231,12 @@ function playerHit(player, enemy) {
 	enemy.kill();
 	var life = lives.getFirstAlive();
     if (life !== null) {
-      life.kill();
+		life.kill();
+		socket.emit('vibrate', 'hit');
     } else {
-      player.kill();
-	  	gameOver();
+		player.kill();
+		socket.emit('vibrate', 'die');
+		gameOver();
     }
 }
 

@@ -34,6 +34,9 @@ io.on('connection', function(socket){
     //console.log('Y: ' + msg);
 	io.emit('setY', msg);
   });
+  socket.on('vibrate', function(msg){
+	io.emit('connectOK', msg);
+  });
   /*socket.on('Z', function(msg){
     //console.log('Z: ' + msg);
 	io.emit('connectOK', 'OK');
