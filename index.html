@@ -147,6 +147,8 @@ function add_boxes()	{
 		var box = boxes.getFirstExists(false);
 		// spawn at a random location top of the screen
 		box.reset(game.rnd.integerInRange(20, game.width - 20), 0);
+		box.scale.setTo(1.5, 1.5);
+		box.play('box', 15, true, false);
 		// also randomize the speed
 		game.physics.arcade.velocityFromAngle(
 			game.rnd.integerInRange(180, 360), 50, box.body.velocity
@@ -343,11 +345,14 @@ function setupBoxes() {
 	boxes.enableBody = true;
 	boxes.physicsBodyType = Phaser.Physics.ARCADE;
 
-	boxes.createMultiple(4, 'square');
+	boxes.createMultiple(4, 'bonus_cube');
 	boxes.setAll('body.collideWorldBounds', true);
 	boxes.setAll('outOfBoundsKill', true);
 	boxes.setAll('body.bounce.x', 1);
 	boxes.setAll('body.bounce.y', 1);
+	boxes.forEach(function(box)	{
+		box.animations.add('box');
+	});
 }
 
 function setupExplosions() {
