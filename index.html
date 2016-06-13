@@ -19,6 +19,7 @@ var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '
 var socket = io();
 
 function preload() {
+    game.load.image('gamestart', '/assets/gamestart.png');
     game.load.image('sky', '/assets/seatiles.jpg');
     game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');
 		game.load.image('player', '/assets/THSR.png');
@@ -44,7 +45,7 @@ const MAX_WEAPON_LEVEL = 4;
 var boxes;
 var explosionPool;
 const ENEMY_1_HEALTH = 1, ENEMY_2_HEALTH = 2, ENEMY_3_HEALTH = 5;
-
+var state = 0;
 var score = 0;
 var scoreText;
 
@@ -69,9 +70,8 @@ function create() {
 	setupPlayerLives();
 	setupBoxes();
 	setupExplosions();
-
+	setupMenu();
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
-
 }
 
 var newX = 0;
@@ -84,33 +84,45 @@ function update() {
 	socket.on('setY', function(data) {
 		newY = parseFloat(data);
     });
+	socket.on('start', function(data) {
+		state=0;
+		setupMenu();
+	}
 	socket.on('shoot', function(data) {
-		fire();
-		if( !player.alive )	{
-			setupPlayer();
-			setupBullets();
-			setupPlayerLives();
-			gameOverText.kill();
+
+		if(state===0){
+			state=1;
+			gamestart.kill();
+		} else{
+			fire();
+			if( !player.alive )	{
+				setupPlayer();
+				setupBullets();
+				setupPlayerLives();
+				gameOverText.kill();
+			}
 		}
   });
 
-    player.body.velocity.x = 10*(-newY);
-	player.body.velocity.y = 10*(-newX);
+    if(state===1){
+		player.body.velocity.x = 10*(-newY);
+		player.body.velocity.y = 10*(-newX);
 
-	spawn_enemy();
-	enemy_fire();
+		spawn_enemy();
+		enemy_fire();
 
-	add_boxes();
+		add_boxes();
 
-	for (var i=0;i<3;i++){
-		game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this);
-		game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
+		for (var i=0;i<3;i++){
+			game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this);
+			game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
+		}
+		for( var i = 0 ; i < 2;  i ++ )	{
+			game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
+		}
+
+		game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this);
 	}
-	for( var i = 0 ; i < 2;  i ++ )	{
-		game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
-	}
-
-	game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this);
 }
 
 function fire() {
@@ -149,7 +161,10 @@ function add_boxes()	{
 		// spawn at a random location top of the screen
 		box.reset(game.rnd.integerInRange(20, game.width - 20), 0);
 		box.scale.setTo(1.5, 1.5);
+		var rnd = game.rnd.integerInRange(0, 6);
+		box.animations.add('box', [rnd*3, rnd*3+1, rnd*3+2], 21, true);
 		box.play('box', 15, true, false);
+		box.type = rnd;
 		// also randomize the speed
 		game.physics.arcade.velocityFromAngle(
 			game.rnd.integerInRange(180, 360), 50, box.body.velocity
@@ -272,6 +287,13 @@ function playerHitByBullet(player, bullet) {
 }
 
 function PlayerVsBox(player, box)	{
+	//if( box.type === 2 )	{
+		var dead_lives = lives.countDead();
+		if( dead_lives > 0 ) 	{
+			var newlife = lives.getChildAt(dead_lives-1);
+			newlife.reset(this.game.width - 10 - (MAX_LIFE * 30) + 30*(dead_lives-1) , 30);
+		}
+	//}
 	box.kill();
 	score += 50;
   scoreText.text = 'Score: ' + score;
@@ -292,6 +314,7 @@ function explode(sprite) {
 }
 
 function gameOver(){
+	state=-1;
 	gameOverText = game.add.text(game.width/2, game.height / 2, 'Game Over!', { font: '32px sans-serif', fill: '#fff'});
 	gameOverText.anchor.setTo(0.5, 0.5);
 }
@@ -373,9 +396,9 @@ function setupBoxes() {
 	boxes.setAll('outOfBoundsKill', true);
 	boxes.setAll('body.bounce.x', 1);
 	boxes.setAll('body.bounce.y', 1);
-	boxes.forEach(function(box)	{
-		box.animations.add('box');
-	});
+	/*boxes.forEach(function(box)	{
+		box.animations.add('box', [0, 1, 2], 21, true);
+	}); */
 }
 
 function setupExplosions() {
@@ -390,6 +413,11 @@ function setupExplosions() {
 	explosionPool.forEach(function (explosion) {
 		explosion.animations.add('boom');
 	});
+}
+
+function setupMenu(){
+	gamestart = game.add.sprite(game.width/2, game.height / 2, 'gamestart');
+	gamestart.anchor.setTo(0.5, 0.5);
 }
 
 </script>
