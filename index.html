@@ -66,9 +66,14 @@ var ultsign;
 var ultsign_g;
 var gameOverText;
 var gamestart;
-
+var weaponMode=0;
 var fireRate = 100;
 var nextFire = 0;
+
+// The following 3 variables is used to make player undead at spawn state to prevent instantaneous death upon spawning.
+var playerSpawnUndeadTime = 10000; // in milliseconds
+var playerSpawnUndead = false;	//whether player is undead
+var tweenPlayer; //the tween effects of player
 
 //var enemyFireRate = 500;
 //var enemyNextFire = 0;
@@ -79,7 +84,7 @@ var nextBox = 0;
 
 function create() {
 	setupBackground();
-	setupPlayer();
+	setupPlayer(false);
 	setupBullets();
 	setupLbs();
 	setupEnemys();
@@ -116,7 +121,7 @@ function update() {
 	socket.on('start', function(data) {
 		state=0;
 		if( !player.alive )	{
-			setupPlayer();
+			setupPlayer(false);
 			weaponLevel=0;
 			score=0;
 
@@ -131,6 +136,8 @@ function update() {
 			game.time.events.add(Phaser.Timer.SECOND * 10, fillult, this);
 			state=1;
 			gamestart.kill();
+			setPlayerSpawnTimeUndead(); // game start
+
 		} else{
 			fire();
 		}
@@ -162,41 +169,45 @@ function update() {
 }
 
 function fire() {
-	/*if (player.alive && game.time.now > nextFire && bullets.countDead() > 0){
-		nextFire = game.time.now + fireRate;
-		var bullet = bullets.getFirstDead();
-		bullet.reset(player.x , player.y - 10);
-		bullet.body.velocity.y = -player_bullet_velocity;
-		if (this.bullets.countDead() < weaponLevel * 2) {
-			return;
-		}
-		for (var i = 1; i <= weaponLevel; i++) {
-			bullet = bullets.getFirstExists(false);
-			// spawn left bullet slightly left off center
-			bullet.reset(player.x - i * 6, player.y - 10);
-			// the left bullets spread from -95 degrees to -135 degrees
-			game.physics.arcade.velocityFromAngle(
-				-95 - i * 10, player_bullet_velocity, bullet.body.velocity
-			);
+	if(weaponMode===0){
+		if (player.alive && game.time.now > nextFire && bullets.countDead() > 0){
+			nextFire = game.time.now + fireRate;
+			var bullet = bullets.getFirstDead();
+			bullet.reset(player.x , player.y - 10);
+			bullet.body.velocity.y = -player_bullet_velocity;
+			if (this.bullets.countDead() < weaponLevel * 2) {
+				return;
+			}
+			for (var i = 1; i <= weaponLevel; i++) {
+				bullet = bullets.getFirstExists(false);
+				// spawn left bullet slightly left off center
+				bullet.reset(player.x - i * 6, player.y - 10);
+				// the left bullets spread from -95 degrees to -135 degrees
+				game.physics.arcade.velocityFromAngle(
+					-95 - i * 10, player_bullet_velocity, bullet.body.velocity
+				);
 
-			bullet = bullets.getFirstExists(false);
-			// spawn right bullet slightly right off center
-			bullet.reset(player.x + i * 6, player.y - 10);
-			// the right bullets spread from -85 degrees to -45
-			game.physics.arcade.velocityFromAngle(
-				-85 + i * 10, player_bullet_velocity, bullet.body.velocity
-			);
+				bullet = bullets.getFirstExists(false);
+				// spawn right bullet slightly right off center
+				bullet.reset(player.x + i * 6, player.y - 10);
+				// the right bullets spread from -85 degrees to -45
+				game.physics.arcade.velocityFromAngle(
+					-85 + i * 10, player_bullet_velocity, bullet.body.velocity
+				);
+			}
 		}
-	}*/
-	if (player.alive && game.time.now > nextFire && lbs.countDead() > 0){
-		nextFire = game.time.now + fireRate;
-		var lb = lbs.getFirstDead();
-		lb.reset(player.x , player.y - 10);
-		lb.body.velocity.y = -player_bullet_velocity*3;
-		if (this.lbs.countDead() < weaponLevel * 2) {
-			return;
+	}
+	else if(weaponMode===1){
+		if (player.alive && game.time.now > nextFire && lbs.countDead() > 0){
+			nextFire = game.time.now + fireRate;
+			var lb = lbs.getFirstDead();
+			lb.reset(player.x , player.y - 10);
+			lb.body.velocity.y = -player_bullet_velocity*5;
+			if (this.lbs.countDead() < weaponLevel * 2) {
+				return;
+			}
+			lb.scale.setTo(1+0.5*weaponLevel,1);
 		}
-		lb.scale.setTo(1+0.5*weaponLevel,1);
 	}
 }
 
@@ -392,6 +403,9 @@ function lbenemyHit(bullet, enemy) {
 }
 
 function playerHit(player, enemy) {
+	if (playerSpawnUndead === true) {
+		return;
+	}
 	explode(enemy);
 	enemy.kill();
 	player.kill();
@@ -412,6 +426,9 @@ function playerHit(player, enemy) {
 }
 
 function playerHitByBullet(player, bullet) {
+	if (playerSpawnUndead === true) {
+		return;
+	}
 	bullet.kill();
 	player.kill();
 
@@ -436,6 +453,7 @@ function PlayerVsBox(player, box)	{
 		case yellow:
 			break;
 		case orange:
+			weaponLevel--;
 			heal();
 			break;
 		case green:
@@ -443,6 +461,8 @@ function PlayerVsBox(player, box)	{
 		case chocolate:
 			break;
 		case blue:
+			weaponLevel--;
+			swap();
 			break;
 		case dark_blue:
 			break;
@@ -461,6 +481,11 @@ function heal()	{
 		var newlife = lives.getChildAt(dead_lives-1);
 		newlife.reset(this.game.width - 10 - (MAX_LIFE * 30) + 30*(dead_lives-1) , 30);
 	}
+}
+
+function swap(){
+	if(weaponMode === 0) weaponMode=1;
+	else weaponMode=0;
 }
 
 function explode(sprite) {
@@ -491,7 +516,8 @@ function setupBackground(){
 	background.tileScale.y = window.innerHeight/background.height;
 }
 
-function setupPlayer(){
+// Parameter: isSetSpawnTimeUndead (default = true): The player will be undead after spawn time for "playerSpawnUndeadTime" milliseconds if this is true
+function setupPlayer(isSetSpawnTimeUndead = true){
 	player = game.add.sprite(game.width / 2, game.height - 50, 'player');
 	game.physics.arcade.enable(player);
 	player.body.collideWorldBounds = true;
@@ -499,6 +525,22 @@ function setupPlayer(){
 	player.anchor.x = 0.5;
 	player.anchor.y = 0.5;
 	player.scale.setTo(1.5, 1.5);
+
+	if (isSetSpawnTimeUndead === true)
+		setPlayerSpawnTimeUndead();
+}
+
+function setPlayerSpawnTimeUndead(){
+	//console.log("Now player is created");
+	player.alpha = 1;
+	playerSpawnUndead = true;
+	tweenPlayer = game.add.tween(player).to( { alpha: 0.5 }, 200, Phaser.Easing.Linear.None, true, 0, playerSpawnUndeadTime / (200 * 2), true);
+	game.time.events.add(playerSpawnUndeadTime, function(){
+		player.alpha = 1;
+		tweenPlayer.stop();
+		playerSpawnUndead = false;
+		//console.log("Now player can be killed");
+	}, this);
 }
 
 function setupBullets(){
