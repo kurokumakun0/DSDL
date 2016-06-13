@@ -52,7 +52,9 @@ const ENEMY_1_HEALTH = 1, ENEMY_2_HEALTH = 5, ENEMY_3_HEALTH = 500;
 var state = 0;
 var score = 0;
 var scoreText;
+var ultText;
 var ult=0;
+var ultstate = ['restore','ready'];
 var gameOverText;
 var gamestart;
 
@@ -77,6 +79,7 @@ function create() {
 	setupExplosions();
 	setupMenu();
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
+	ultText = game.add.text(16, 32, 'ULT state: restore', { fontSize: '20px', fill: '#000' });
 }
 
 var newX = 0;
@@ -90,6 +93,9 @@ function update() {
     });
 	socket.on('setY', function(data) {
 		newY = parseFloat(data);
+    });
+	socket.on('ultra', function(data) {
+		launchult();
     });
 	socket.on('start', function(data) {
 		state=0;
@@ -106,7 +112,7 @@ function update() {
 	});
 	socket.on('shoot', function(data) {
 		if(state===0){
-			game.time.events.add(Phaser.Timer.SECOND * 3, fillult, this);
+			game.time.events.add(Phaser.Timer.SECOND * 10, fillult, this);
 			state=1;
 			gamestart.kill();
 		} else{
@@ -114,6 +120,7 @@ function update() {
 		}
   });
 	scoreText.text = 'Score: ' + score;
+	ultText.text = 'ULT state: ' + ultstate[ult];
 
     if(state===1){
 
@@ -177,24 +184,28 @@ function fire() {
 }
 
 function fillult(){
-
+	ult=1;
 }
 
 function launchult(){
-	enemys[0].forEachAlive(function (enemy) {
-		explode(enemy);
-		enemy.kill();
-		score+=10;
-	}, this);
-	enemys[1].forEachAlive(function (enemy) {
-		explode(enemy);
-		enemy.kill();
-		score+=10;
-	}, this);
-	enemyBullets[0].forEachAlive(function (bullet) {
-		explode(bullet);
-		bullet.kill();
-	}, this);
+	if(ult===1){
+		ult=0;
+		enemys[0].forEachAlive(function (enemy) {
+			explode(enemy);
+			enemy.kill();
+			score+=10;
+		}, this);
+		enemys[1].forEachAlive(function (enemy) {
+			explode(enemy);
+			enemy.kill();
+			score+=10;
+		}, this);
+		enemyBullets[0].forEachAlive(function (bullet) {
+			explode(bullet);
+			bullet.kill();
+		}, this);
+		game.time.events.add(Phaser.Timer.SECOND * 10, fillult, this);
+	}
 }
 
 function add_boxes()	{

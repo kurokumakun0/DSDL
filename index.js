@@ -41,6 +41,9 @@ io.on('connection', function(socket){
   socket.on('vibrate', function(msg){
 	io.emit('connectOK', msg);
   });
+  socket.on('ultra', function(msg){
+	io.emit('ultra', msg);
+  });
   /*socket.on('Z', function(msg){
     //console.log('Z: ' + msg);
 	io.emit('connectOK', 'OK');
