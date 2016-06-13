@@ -229,14 +229,19 @@ function enemyHit(bullet, enemy) {
 
 function playerHit(player, enemy) {
 	enemy.kill();
+	player.kill();
+
 	var life = lives.getFirstAlive();
     if (life !== null) {
-		life.kill();
-		socket.emit('vibrate', 'hit');
+			life.kill();
+			socket.emit('vibrate', 'hit');
+
+			// re alive player
+			setupPlayer();
     } else {
-		player.kill();
-		socket.emit('vibrate', 'die');
-		gameOver();
+			//player.kill();
+			socket.emit('vibrate', 'die');
+			gameOver();
     }
 }
 
