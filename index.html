@@ -43,6 +43,7 @@ var weaponLevel = 0;
 const MAX_WEAPON_LEVEL = 4;
 var boxes;
 var explosionPool;
+const ENEMY_1_HEALTH = 1, ENEMY_2_HEALTH = 2, ENEMY_3_HEALTH = 5;
 
 var score = 0;
 var scoreText;
@@ -106,7 +107,7 @@ function update() {
 		game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
 	}
 	for( var i = 0 ; i < 2;  i ++ )	{
-		game.physics.arcade.overlap(player, enemyBullets[i], playerHitbullet, null, this);
+		game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
 	}
 
 	game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this);
@@ -164,7 +165,7 @@ function spawn_enemy() {
         nextEnemy = game.time.now + game.rnd.integerInRange(1000, 3000);
         var enemy = enemys[0].getFirstExists(false);
         // spawn at a random location top of the screen
-        enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0);
+        enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0, ENEMY_1_HEALTH);
         // also randomize the speed
         enemy.body.velocity.y = game.rnd.integerInRange(30, 60);
 
@@ -174,7 +175,7 @@ function spawn_enemy() {
         nextEnemy2 = game.time.now + game.rnd.integerInRange(2000, 4000);
         var enemy = enemys[1].getFirstExists(false);
         // spawn at a random location top of the screen
-        enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0);
+        enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0, ENEMY_2_HEALTH);
 				var target = game.rnd.integerInRange(20, game.width - 20);
 				enemy.rotation = game.physics.arcade.moveToXY(
 				  enemy, target, game.height,
@@ -185,10 +186,10 @@ function spawn_enemy() {
     }
 
 		if (game.time.now > nextEnemy3 && enemys[2].countDead() > 0) {
-			nextEnemy3 = game.time.now + game.rnd.integerInRange(100000, 300000);
+			nextEnemy3 = game.time.now + game.rnd.integerInRange(60000, 120000);
 			var enemy = enemys[2].getFirstExists(false);
 			// spawn at a random location top of the screen
-			enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0);
+			enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0, ENEMY_3_HEALTH);
 			// also randomize the speed
 			enemy.body.velocity.y = game.rnd.integerInRange(10, 20);
 
@@ -227,8 +228,9 @@ function enemy_fire() {
 
 function enemyHit(bullet, enemy) {
 	bullet.kill();
+	enemy.damage(1);
+	//if (enemy.alive) play hit animation(not available yet) else play explode animation
 	explode(enemy);
-	enemy.kill();
 	score += 10;
   scoreText.text = 'Score: ' + score;
 }
@@ -253,7 +255,7 @@ function playerHit(player, enemy) {
     }
 }
 
-function playerHitbullet(player, bullet) {
+function playerHitByBullet(player, bullet) {
 	bullet.kill();
 	player.kill();
 
