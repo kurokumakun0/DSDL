@@ -106,7 +106,7 @@ function update() {
 		game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
 	}
 	for( var i = 0 ; i < 2;  i ++ )	{
-		game.physics.arcade.overlap(player, enemyBullets[i], playerHit, null, this);
+		game.physics.arcade.overlap(player, enemyBullets[i], playerHitbullet, null, this);
 	}
 
 	game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this);
@@ -238,7 +238,25 @@ function playerHit(player, enemy) {
 			life.kill();
 			explode(player);
 			socket.emit('vibrate', 'hit');
+			// re alive player
+			setupPlayer();
+    } else {
+			//player.kill();
+			explode(player);
+			socket.emit('vibrate', 'die');
+			gameOver();
+    }
+}
 
+function playerHitbullet(player, bullet) {
+	bullet.kill();
+	player.kill();
+
+	var life = lives.getFirstAlive();
+    if (life !== null) {
+			life.kill();
+			explode(player);
+			socket.emit('vibrate', 'hit');
 			// re alive player
 			setupPlayer();
     } else {
