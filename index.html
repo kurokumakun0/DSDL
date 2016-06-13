@@ -79,7 +79,7 @@ function create() {
 	setupExplosions();
 	setupMenu();
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
-	ultText = game.add.text(16, 32, 'ULT state: restore', { fontSize: '20px', fill: '#000' });
+	ultText = game.add.text(16, 36, 'ULT state: restore', { fontSize: '20px', fill: '#000' });
 }
 
 var newX = 0;
@@ -95,7 +95,8 @@ function update() {
 		newY = parseFloat(data);
     });
 	socket.on('ultra', function(data) {
-		launchult();
+		if(player.alive)
+			launchult();
     });
 	socket.on('start', function(data) {
 		state=0;
@@ -145,16 +146,6 @@ function update() {
 }
 
 function fire() {
-	
-	
-	/*if(ult===1){
-		enemys[0].forEachAlive(function (enemy) {
-			explode(enemy);
-			enemy.kill();
-		}, this);
-		ult=0;
-	}*/
-	
 	if (player.alive && game.time.now > nextFire && bullets.countDead() > 0){
 		nextFire = game.time.now + fireRate;
 		var bullet = bullets.getFirstDead();
@@ -185,11 +176,13 @@ function fire() {
 
 function fillult(){
 	ult=1;
+	ultText.fill='#F00';
 }
 
 function launchult(){
 	if(ult===1){
 		ult=0;
+		ultText.fill='#000';
 		enemys[0].forEachAlive(function (enemy) {
 			explode(enemy);
 			enemy.kill();
@@ -200,7 +193,16 @@ function launchult(){
 			enemy.kill();
 			score+=10;
 		}, this);
+		enemys[2].forEachAlive(function (enemy) {
+			explode(enemy);
+			enemy.damage(100);
+			if(!enemy.alive) score+=10;
+		}, this);
 		enemyBullets[0].forEachAlive(function (bullet) {
+			explode(bullet);
+			bullet.kill();
+		}, this);
+		enemyBullets[1].forEachAlive(function (bullet) {
 			explode(bullet);
 			bullet.kill();
 		}, this);
@@ -443,8 +445,8 @@ function setupEnemys(){
 		enemys[i].setAll('outOfBoundsKill', true);
 		enemys[i].setAll('anchor.x', 0.5);
 		enemys[i].setAll('anchor.y', 0.5);
-		enemys[i].setAll('scale.x', (i == 2) ? 4 : 1.5);
-		enemys[i].setAll('scale.y', (i == 2) ? 4 : 1.5);
+		enemys[i].setAll('scale.x', 1.5);
+		enemys[i].setAll('scale.y', 1.5);
 	}
 }
 
