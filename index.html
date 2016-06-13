@@ -35,6 +35,8 @@ function preload() {
 		//game.load.spritesheet('player_bullet', '/assets/shump_assets/player_bullets.png');
 }
 
+var player_bullet_velocity = 750;
+
 var player, bullets;
 var enemys = new Array(), enemyBullets = new Array();
 var enemy_num = [20, 10, 2];
@@ -43,8 +45,9 @@ const MAX_LIFE = 3;
 var weaponLevel = 0;
 const MAX_WEAPON_LEVEL = 4;
 var boxes;
+const yellow = 0, orange = 1, green = 2, chocolate = 3, blue = 4, dark_blue = 5, gray = 6;
 var explosionPool;
-const ENEMY_1_HEALTH = 1, ENEMY_2_HEALTH = 2, ENEMY_3_HEALTH = 5;
+const ENEMY_1_HEALTH = 1, ENEMY_2_HEALTH = 5, ENEMY_3_HEALTH = 500;
 var state = 0;
 var score = 0;
 var scoreText;
@@ -59,7 +62,7 @@ var nextFire = 0;
 //var enemyNextFire = 0;
 
 //var enemyRate = 1000;
-var nextEnemy = 0, nextEnemy2 = 0, nextEnemy3 = 100000;
+var nextEnemy = 0, nextEnemy2 = 0, nextEnemy3 = 10000;
 var nextBox = 0;
 
 function create() {
@@ -136,7 +139,7 @@ function fire() {
 		nextFire = game.time.now + fireRate;
 		var bullet = bullets.getFirstDead();
 		bullet.reset(player.x , player.y - 10);
-		bullet.body.velocity.y = -400;
+		bullet.body.velocity.y = -player_bullet_velocity;
 		if (this.bullets.countDead() < weaponLevel * 2) {
 			return;
 		}
@@ -146,7 +149,7 @@ function fire() {
 			bullet.reset(player.x - i * 6, player.y - 10);
 			// the left bullets spread from -95 degrees to -135 degrees
 			game.physics.arcade.velocityFromAngle(
-				-95 - i * 10, 400, bullet.body.velocity
+				-95 - i * 10, player_bullet_velocity, bullet.body.velocity
 			);
 
 			bullet = bullets.getFirstExists(false);
@@ -154,7 +157,7 @@ function fire() {
 			bullet.reset(player.x + i * 6, player.y - 10);
 			// the right bullets spread from -85 degrees to -45
 			game.physics.arcade.velocityFromAngle(
-				-85 + i * 10, 400, bullet.body.velocity
+				-85 + i * 10, player_bullet_velocity, bullet.body.velocity
 			);
 		}
 	}
@@ -175,7 +178,13 @@ function add_boxes()	{
 		game.physics.arcade.velocityFromAngle(
 			game.rnd.integerInRange(180, 360), 50, box.body.velocity
 		);
+
+		game.time.events.add(Phaser.Timer.SECOND * 20, fadeBox, this, box);
 	}
+}
+
+function fadeBox(box) {
+		box.kill();
 }
 
 function spawn_enemy() {
@@ -236,10 +245,16 @@ function enemy_fire() {
 
 	enemys[2].forEachAlive(function (enemy) {
 		if (game.time.now > enemy.enemyNextFire && enemyBullets[1].countDead() > 0){
-			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(5000, 10000);
-			var enemy_bullet = enemyBullets[1].getFirstDead();
-			enemy_bullet.reset(enemy.x, enemy.y + enemy.height/2);
-			game.physics.arcade.moveToObject(enemy_bullet, player, 300);
+			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(5000, 6000);
+			for( var i = 0 ; i < 5 ; i ++ )	{
+				var enemy_bullet = enemyBullets[1].getFirstDead();
+				enemy_bullet.reset(enemy.x + 50, enemy.y + enemy.height/2 + i*30);
+				game.physics.arcade.moveToObject(enemy_bullet, player, 300);
+
+				enemy_bullet = enemyBullets[1].getFirstDead();
+				enemy_bullet.reset(enemy.x - 50, enemy.y + enemy.height/2 + i*30);
+				game.physics.arcade.moveToObject(enemy_bullet, player, 300);
+			}
 		}
 	}, this);
 }
@@ -294,17 +309,36 @@ function playerHitByBullet(player, bullet) {
 
 function PlayerVsBox(player, box)	{
 	//if( box.type === 2 )	{
-		var dead_lives = lives.countDead();
-		if( dead_lives > 0 ) 	{
-			var newlife = lives.getChildAt(dead_lives-1);
-			newlife.reset(this.game.width - 10 - (MAX_LIFE * 30) + 30*(dead_lives-1) , 30);
-		}
-	//}
+	switch(box.type)	{
+		case yellow:
+			break;
+		case orange:
+			heal();
+			break;
+		case green:
+			break;
+		case chocolate:
+			break;
+		case blue:
+			break;
+		case dark_blue:
+			break;
+		case gray:
+			break;
+	}
 	box.kill();
 	score += 50;
   scoreText.text = 'Score: ' + score;
 	if( weaponLevel < MAX_WEAPON_LEVEL )
 		weaponLevel ++;
+}
+
+function heal()	{
+	var dead_lives = lives.countDead();
+	if( dead_lives > 0 ) 	{
+		var newlife = lives.getChildAt(dead_lives-1);
+		newlife.reset(this.game.width - 10 - (MAX_LIFE * 30) + 30*(dead_lives-1) , 30);
+	}
 }
 
 function explode(sprite) {
@@ -379,6 +413,10 @@ function setupEnemyBullets(){
 		enemyBullets[i].createMultiple(100, 'enemy_bullet' + (i+1) );
 		enemyBullets[i].setAll('checkWorldBounds', true);
 		enemyBullets[i].setAll('outOfBoundsKill', true);
+		if( i == 1 )	{
+			enemyBullets[i].setAll('scale.x', 1.5);
+			enemyBullets[i].setAll('scale.y', 1.5);
+		}
 	}
 }
 
