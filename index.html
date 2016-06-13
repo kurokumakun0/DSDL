@@ -29,6 +29,7 @@ function preload() {
 		game.load.image('enemy_bullet2', '/assets/shump_assets/mob_bullet_2.png');
 		game.load.image('square', '/assets/tile_question_box.png');
 		game.load.spritesheet('bonus_cube', 'assets/shump_assets/cubes.png', 24, 24);
+		game.load.spritesheet('explosion', 'assets/shump_assets/explosion_1.png', 32, 32);
     //game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
 		//game.load.spritesheet('player_bullet', '/assets/shump_assets/player_bullets.png');
 }
@@ -41,6 +42,7 @@ const MAX_LIFE = 3;
 var weaponLevel = 0;
 const MAX_WEAPON_LEVEL = 4;
 var boxes;
+var explosionPool;
 
 var score = 0;
 var scoreText;
@@ -65,6 +67,7 @@ function create() {
 	setupEnemyBullets();
 	setupPlayerLives();
 	setupBoxes();
+	setupExplosions();
 
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
 
@@ -113,7 +116,7 @@ function fire() {
 	if (player.alive && game.time.now > nextFire && bullets.countDead() > 0){
 		nextFire = game.time.now + fireRate;
 		var bullet = bullets.getFirstDead();
-		bullet.reset(player.x + 12, player.y - 10);
+		bullet.reset(player.x , player.y - 10);
 		bullet.body.velocity.y = -400;
 		if (this.bullets.countDead() < weaponLevel * 2) {
 			return;
@@ -121,7 +124,7 @@ function fire() {
 		for (var i = 1; i <= weaponLevel; i++) {
 			bullet = bullets.getFirstExists(false);
 			// spawn left bullet slightly left off center
-			bullet.reset(player.x + 7 - i * 6, player.y - 10);
+			bullet.reset(player.x - i * 6, player.y - 10);
 			// the left bullets spread from -95 degrees to -135 degrees
 			game.physics.arcade.velocityFromAngle(
 				-95 - i * 10, 400, bullet.body.velocity
@@ -129,7 +132,7 @@ function fire() {
 
 			bullet = bullets.getFirstExists(false);
 			// spawn right bullet slightly right off center
-			bullet.reset(player.x + 17 + i * 6, player.y - 10);
+			bullet.reset(player.x + i * 6, player.y - 10);
 			// the right bullets spread from -85 degrees to -45
 			game.physics.arcade.velocityFromAngle(
 				-85 + i * 10, 400, bullet.body.velocity
@@ -193,7 +196,7 @@ function enemy_fire() {
 		if (game.time.now > enemy.enemyNextFire && enemyBullets[0].countDead() > 0){
 			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(1000, 3000);
 			var enemy_bullet = enemyBullets[0].getFirstDead();
-			enemy_bullet.reset(enemy.x+13, enemy.y + 32);
+			enemy_bullet.reset(enemy.x, enemy.y + enemy.height/2);
 			enemy_bullet.body.velocity.y=400;
 		}
 	}, this);
@@ -202,7 +205,7 @@ function enemy_fire() {
 		if (game.time.now > enemy.enemyNextFire && enemyBullets[0].countDead() > 0){
 			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(2000, 5000);
 			var enemy_bullet = enemyBullets[0].getFirstDead();
-			enemy_bullet.reset(enemy.x+13, enemy.y + 32);
+			enemy_bullet.reset(enemy.x, enemy.y + enemy.height/2);
 			game.physics.arcade.moveToObject(enemy_bullet, player, 400);
 		}
 	}, this);
@@ -211,7 +214,7 @@ function enemy_fire() {
 		if (game.time.now > enemy.enemyNextFire && enemyBullets[1].countDead() > 0){
 			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(5000, 10000);
 			var enemy_bullet = enemyBullets[1].getFirstDead();
-			enemy_bullet.reset(enemy.x+13, enemy.y + 32);
+			enemy_bullet.reset(enemy.x, enemy.y + enemy.height/2);
 			game.physics.arcade.moveToObject(enemy_bullet, player, 300);
 		}
 	}, this);
@@ -219,27 +222,28 @@ function enemy_fire() {
 
 function enemyHit(bullet, enemy) {
 	bullet.kill();
+	explode(enemy);
 	enemy.kill();
 	score += 10;
   scoreText.text = 'Score: ' + score;
-	if(score > (weaponLevel+1)*100 && weaponLevel < MAX_WEAPON_LEVEL){
-		weaponLevel++;
-	}
 }
 
 function playerHit(player, enemy) {
+	explode(enemy);
 	enemy.kill();
 	player.kill();
 
 	var life = lives.getFirstAlive();
     if (life !== null) {
 			life.kill();
+			explode(player);
 			socket.emit('vibrate', 'hit');
 
 			// re alive player
 			setupPlayer();
     } else {
 			//player.kill();
+			explode(player);
 			socket.emit('vibrate', 'die');
 			gameOver();
     }
@@ -251,6 +255,18 @@ function PlayerVsBox(player, box)	{
   scoreText.text = 'Score: ' + score;
 	if( weaponLevel < MAX_WEAPON_LEVEL )
 		weaponLevel ++;
+}
+
+function explode(sprite) {
+	if (explosionPool.countDead() === 0) {
+		return;
+	}
+	var explosion = explosionPool.getFirstExists(false);
+	explosion.reset(sprite.x, sprite.y);
+	explosion.play('boom', 15, false, true);
+	// add the original sprite's velocity to the explosion
+	explosion.body.velocity.x = sprite.body.velocity.x;
+	explosion.body.velocity.y = sprite.body.velocity.y;
 }
 
 function gameOver(){
@@ -272,6 +288,8 @@ function setupPlayer(){
 	game.physics.arcade.enable(player);
 	player.body.collideWorldBounds = true;
 	//game.player.body.setSize(20, 20, 0, -5);
+	player.anchor.x = 0.5;
+	player.anchor.y = 0.5;
 }
 
 function setupBullets(){
@@ -285,14 +303,16 @@ function setupBullets(){
 }
 
 function setupEnemys(){
-	for(var i=1;i<=3;i++){
-		enemys[i-1] = game.add.group();
-		enemys[i-1].enableBody = true;
-		enemys[i-1].physicsBodyType = Phaser.Physics.ARCADE;
+	for(var i=0;i<3;i++){
+		enemys[i] = game.add.group();
+		enemys[i].enableBody = true;
+		enemys[i].physicsBodyType = Phaser.Physics.ARCADE;
 
-		enemys[i-1].createMultiple(enemy_num[i-1], 'enemy'+i);
-		enemys[i-1].setAll('checkWorldBounds', true);
-		enemys[i-1].setAll('outOfBoundsKill', true);
+		enemys[i].createMultiple(enemy_num[i], 'enemy'+(i+1));
+		enemys[i].setAll('checkWorldBounds', true);
+		enemys[i].setAll('outOfBoundsKill', true);
+		enemys[i].setAll('anchor.x', 0.5);
+		enemys[i].setAll('anchor.y', 0.5);
 	}
 }
 
@@ -328,6 +348,20 @@ function setupBoxes() {
 	boxes.setAll('outOfBoundsKill', true);
 	boxes.setAll('body.bounce.x', 1);
 	boxes.setAll('body.bounce.y', 1);
+}
+
+function setupExplosions() {
+	explosionPool = game.add.group();
+	explosionPool.enableBody = true;
+	explosionPool.physicsBodyType = Phaser.Physics.ARCADE;
+	explosionPool.createMultiple(100, 'explosion');
+	explosionPool.setAll('anchor.x', 0.5);
+	explosionPool.setAll('anchor.y', 0.5);
+	explosionPool.setAll('scale.x', 1.5);
+	explosionPool.setAll('scale.y', 1.5);
+	explosionPool.forEach(function (explosion) {
+		explosion.animations.add('boom');
+	});
 }
 
 </script>
