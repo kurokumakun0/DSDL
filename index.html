@@ -37,6 +37,7 @@ function preload() {
 
 		game.load.spritesheet('bonus_cube', 'assets/shump_assets/cubes.png', 24, 24);
 		game.load.spritesheet('explosion', 'assets/shump_assets/explosion_1.png', 32, 32);
+		game.load.spritesheet('shield', 'assets/magic.png', 192, 192);
     //game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
 	//game.load.spritesheet('player_bullet', '/assets/shump_assets/player_bullets.png');
 }
@@ -74,6 +75,7 @@ var nextFire = 0;
 var playerSpawnUndeadTime = 10000; // in milliseconds
 var playerSpawnUndead = false;	//whether player is undead
 var tweenPlayer; //the tween effects of player
+var shield;
 
 //var enemyFireRate = 500;
 //var enemyNextFire = 0;
@@ -147,26 +149,29 @@ function update() {
 
     if(state===1){
 
-		player.body.velocity.x = 10*(-newY);
-		player.body.velocity.y = 10*(-newX);
+				player.body.velocity.x = 10*(-newY);
+				player.body.velocity.y = 10*(-newX);
 
-		spawn_enemy();
-		enemy_fire();
+				player.shield.position.x = player.position.x;
+				player.shield.position.y = player.position.y + player.height/2;;
 
-		add_boxes();
+				spawn_enemy();
+				enemy_fire();
 
-		for( var i = 0 ; i < 4 ; i ++ ) {
-			game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this);
-			game.physics.arcade.overlap(lbs, enemys[i], lbenemyHit, null, this);
-			if( i != 0 )	// player(on sky) cannot touch enemys[0](on land)
-				game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
+				add_boxes();
+
+				for( var i = 0 ; i < 4 ; i ++ ) {
+					game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this);
+					game.physics.arcade.overlap(lbs, enemys[i], lbenemyHit, null, this);
+					if( i != 0 )	// player(on sky) cannot touch enemys[0](on land)
+						game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
+				}
+				for( var i = 0 ; i < 2;  i ++ )	{
+					game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
+				}
+
+				game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this);
 		}
-		for( var i = 0 ; i < 2;  i ++ )	{
-			game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
-		}
-
-		game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this);
-	}
 }
 
 function fire() {
@@ -318,14 +323,16 @@ function spawn_enemy() {
 				enemy.enemyNextFire = 0;
     }
 		if (game.time.now > nextEnemy3 && enemys[3].countDead() > 0) {
-			nextEnemy3 = game.time.now + game.rnd.integerInRange(60000, 120000);
-			var enemy = enemys[3].getFirstExists(false);
-			// spawn at a random location top of the screen
-			enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0, ENEMY_3_HEALTH);
-			// also randomize the speed
-			enemy.body.velocity.y = game.rnd.integerInRange(10, 20);
+				nextEnemy3 = game.time.now + game.rnd.integerInRange(60000, 120000);
+				var enemy = enemys[3].getFirstExists(false);
+				// spawn at a random location top of the screen
+				enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0, ENEMY_3_HEALTH);
+				// also randomize the speed
+				enemy.body.velocity.y = game.rnd.integerInRange(10, 20);
 
-			enemy.enemyNextFire = 0;
+				enemy.enemyNextFire = 0;
+
+				console.log("Ewidth = " + enemy.width + ", Eheight = " + enemy.height);
 	  }
 }
 
@@ -399,6 +406,8 @@ function enemyHit(bullet, enemy) {
 	//if (enemy.alive) play hit animation(not available yet) else play explode animation
 	explode(enemy);
 	score += 10;
+
+	console.log('bounds = ' + enemy.getBounds() );
 }
 
 function lbenemyHit(bullet, enemy) {
@@ -416,6 +425,8 @@ function playerHit(player, enemy) {
 	explode(enemy);
 	enemy.kill();
 	player.kill();
+	player.shield.kill();
+	game.time.events.remove(player.shield.loop);
 
 	var life = lives.getFirstAlive();
     if (life !== null) {
@@ -438,6 +449,8 @@ function playerHitByBullet(player, bullet) {
 	}
 	bullet.kill();
 	player.kill();
+	player.shield.kill();
+	game.time.events.remove(player.shield.loop);
 
 	var life = lives.getFirstAlive();
     if (life !== null) {
@@ -534,7 +547,26 @@ function setupPlayer(isSetSpawnTimeUndead){
 	//game.player.body.setSize(20, 20, 0, -5);
 	player.anchor.x = 0.5;
 	player.anchor.y = 0.5;
+
+	//console.log("width = " + player.width + ", height = " + player.height);
+
 	player.scale.setTo(1.5, 1.5);
+
+	//console.log("width = " + player.width + ", height = " + player.height);
+
+	//console.log('position(' + player.x + ', ' + player.y + '), coor('+ player.position.x + ', ' + player.position.y + ')');
+
+	player.shield = game.add.sprite(player.x, player.y, 'shield');
+	game.physics.arcade.enable(player.shield);
+	player.shield.anchor.x = 0.5;
+	player.shield.anchor.y = 0.5;
+	player.shield.animations.add('effect', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], 20, true);
+	player.shield.animations.play('effect');
+	player.shield.loop = game.time.events.loop(Phaser.Timer.SECOND * 3, function()	{
+		player.shield.animations.play('effect');
+	}, this);
+
+	//player.addChild(shield);
 
 	if (isSetSpawnTimeUndead === true)
 		setPlayerSpawnTimeUndead();
@@ -586,6 +618,9 @@ function setupEnemys(){
 		enemys[i].setAll('outOfBoundsKill', true);
 		enemys[i].setAll('anchor.x', 0.5);
 		enemys[i].setAll('anchor.y', 0.5);
+
+		//console.log("Ewidth = " + enemys[i].getFirstDead().width + ", Eheight = " + enemys[i].getFirstDead().height);
+
 		enemys[i].setAll('scale.x', (i == 3) ? 3 : 1.5);
 		enemys[i].setAll('scale.y', (i == 3) ? 3 : 1.5);
 
