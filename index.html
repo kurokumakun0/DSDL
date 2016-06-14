@@ -109,41 +109,41 @@ function update() {
 	}, this);
 
     socket.on('setX', function(data) {
-		newX = parseFloat(data);
+			newX = parseFloat(data);
     });
-	socket.on('setY', function(data) {
-		newY = parseFloat(data);
-    });
-	socket.on('ultra', function(data) {
-		if(player.alive)
-			launchult();
-    });
-	socket.on('start', function(data) {
-		state=0;
-		if( !player.alive )	{
-			setupPlayer(false);
-			weaponLevel=0;
-			score=0;
+		socket.on('setY', function(data) {
+			newY = parseFloat(data);
+	    });
+		socket.on('ultra', function(data) {
+			if(player.alive)
+				launchult();
+	    });
+		socket.on('start', function(data) {
+			state=0;
+			if( !player.alive )	{
+				setupPlayer(false);
+				weaponLevel=0;
+				score=0;
 
-			setupBullets();
-			setupPlayerLives();
-			gameOverText.kill();
-		}
-		resetMenu();
-	});
-	socket.on('shoot', function(data) {
-		if(state===0){
-			game.time.events.add(Phaser.Timer.SECOND * 10, fillult, this);
-			state=1;
-			gamestart.kill();
-			setPlayerSpawnTimeUndead(); // game start
+				setupBullets();
+				setupPlayerLives();
+				gameOverText.kill();
+			}
+			resetMenu();
+		});
+		socket.on('shoot', function(data) {
+			if(state===0){
+				game.time.events.add(Phaser.Timer.SECOND * 10, fillult, this);
+				state=1;
+				gamestart.kill();
+				setPlayerSpawnTimeUndead(); // game start
 
-		} else{
-			fire();
-		}
-  });
-	scoreText.text = 'Score: ' + score;
-	ultText.text = 'ULT state: ' + ultstate[ult];
+			} else{
+				fire();
+			}
+	  });
+		scoreText.text = 'Score: ' + score;
+		ultText.text = 'ULT state: ' + ultstate[ult];
 
     if(state===1){
 
@@ -237,6 +237,11 @@ function launchult(){
 			enemy.damage(100);
 			if(!enemy.alive) score+=10;
 		}, this);
+		enemys[3].forEachAlive(function (enemy) {
+			explode(enemy);
+			enemy.kill();
+			if(!enemy.alive) score+=10;
+		}, this);
 		enemyBullets[0].forEachAlive(function (bullet) {
 			explode(bullet);
 			bullet.kill();
@@ -326,9 +331,9 @@ function spawn_enemy() {
 
 function enemy4_attack(enemy)	{
 	if ( game.time.now > enemy.enemyNextFire && enemyBullets[1].countDead() > 0 && enemy.alive ){
+		enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(10000, 10000);
 		enemy.play('open');
 		for( var i = 0 ; i < 3 ; i ++ )	{
-			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(10000, 10000);
 			//  left
 			var enemy_bullet = enemyBullets[1].getFirstDead();
 			enemy_bullet.reset(enemy.x - i*30, enemy.y );
@@ -376,7 +381,7 @@ function enemy_fire() {
 			for( var i = 0 ; i < 5 ; i ++ )	{
 				var enemy_bullet = enemyBullets[1].getFirstDead();
 				enemy_bullet.reset(enemy.x + 50, enemy.y + enemy.height/2 + i*30);
-				game.physics.arcade.moveToObject(enemy_bullet, player, 300);
+				game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity*0.8);
 
 				enemy_bullet = enemyBullets[1].getFirstDead();
 				enemy_bullet.reset(enemy.x - 50, enemy.y + enemy.height/2 + i*30);
