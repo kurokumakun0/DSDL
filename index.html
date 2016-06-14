@@ -158,7 +158,8 @@ function update() {
 		for (var i=0;i<4;i++){
 			game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this);
 			game.physics.arcade.overlap(lbs, enemys[i], lbenemyHit, null, this);
-			game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
+			if( i != 3 )	// player(on sky) cannot touch enemys[3](on land)
+				game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
 		}
 		for( var i = 0 ; i < 2;  i ++ )	{
 			game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
@@ -270,7 +271,7 @@ function add_boxes()	{
 			game.rnd.integerInRange(180, 360), 50, box.body.velocity
 		);
 
-		game.time.events.add(Phaser.Timer.SECOND * 60, fadeBox, this, box);
+		game.time.events.add(Phaser.Timer.SECOND * 120, fadeBox, this, box);
 	}
 }
 
@@ -324,8 +325,7 @@ function spawn_enemy() {
 			enemy.animations.add('open', [0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 8, 8, 8, 8], 20, false);
 			enemy.animations.add('close', [8, ,8 ,8 ,8, 8, 8, 7, 6, 5, 4, 3, 2, 1, 0], 20, false);
 
-			//timer
-			game.time.events.loop(Phaser.Timer.SECOND * 20, enemy4_attack, this, enemy);
+			enemy4_attack(enemy);
 	  }
 }
 
@@ -522,7 +522,10 @@ function setupBackground(){
 }
 
 // Parameter: isSetSpawnTimeUndead (default = true): The player will be undead after spawn time for "playerSpawnUndeadTime" milliseconds if this is true
-function setupPlayer(isSetSpawnTimeUndead = true){
+function setupPlayer(isSetSpawnTimeUndead){
+
+	isSetSpawnTimeUndead = typeof isSetSpawnTimeUndead !== 'undefined' ? isSetSpawnTimeUndead : true;
+
 	player = game.add.sprite(game.width / 2, game.height - 50, 'player');
 	game.physics.arcade.enable(player);
 	player.body.collideWorldBounds = true;
@@ -599,6 +602,7 @@ function setupEnemyBullets(){
 		enemyBullets[i].setAll('scale.x', 1.5);
 		enemyBullets[i].setAll('scale.y', 1.5);
 	}
+
 }
 
 function setupPlayerLives(){
