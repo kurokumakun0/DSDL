@@ -74,6 +74,10 @@ var shield;
 var newX = 0;
 var newY = 0;
 
+// The following 2 variables is he property of SuperPlayer. (see function superPlayer() below)
+var playerSuperTime = 10000;
+var playerSuper = false;
+
 //ENEMY
 const ENEMY_0_HEALTH = 5, ENEMY_1_HEALTH = 1, ENEMY_2_HEALTH = 3, ENEMY_3_HEALTH = 500;
 var enemys = new Array();
@@ -85,7 +89,7 @@ var nextEnemy0 = 0, nextEnemy = 0, nextEnemy2 = 0, nextEnemy3 = 10000;
 
 
 //Others
-const yellow = 0, orange = 1, green = 2, chocolate = 3, blue = 4, dark_blue = 5, gray = 6;
+const yellow = 0, orange = 1, green = 2, chocolate = 3, blue = 4, dark_blue = 5, gray = 6, colorful = 7;
 var boxes;
 var nextBox = 0;
 var explosionPool;
@@ -293,8 +297,11 @@ function add_boxes()	{
 		// spawn at a random location top of the screen
 		box.reset(game.rnd.integerInRange(20, game.width - 20), 0);
 		box.scale.setTo(1.5, 1.5);
-		var rnd = game.rnd.integerInRange(0, 6);
-		box.animations.add('box', [rnd*3, rnd*3+1, rnd*3+2], 21, true);
+		var rnd = game.rnd.integerInRange(0, 7);
+		if (rnd === 7)
+			box.animations.add('box', [0,3,6,9,12,15,18,1,4,7,10,13,16,19,2,5,8,11,14,17,20], 21, true); //colorful box
+		else
+			box.animations.add('box', [rnd*3, rnd*3+1, rnd*3+2], 21, true); //single-color box
 		box.play('box', 15, true, false);
 		box.type = rnd;
 		// also randomize the speed
@@ -447,6 +454,12 @@ function playerHit(player, enemy) {
 	if (playerSpawnUndead === true) {
 		return;
 	}
+	else if (playerSuper === true) {
+		explode(enemy);
+		enemy.kill();
+		score += 10;
+		return;
+	}
 	explode(enemy);
 	explode(player);
 	enemy.kill();
@@ -467,6 +480,10 @@ function playerHit(player, enemy) {
 
 function playerHitByBullet(player, bullet) {
 	if (playerSpawnUndead === true) {
+		return;
+	}
+	else if (playerSuper === true) {
+		bullet.kill();
 		return;
 	}
 	explode(player);
@@ -511,6 +528,10 @@ function PlayerVsBox(player, box)	{
 			break;
 		case gray:
 			break;
+		case colorful:
+			//console.log("you got a colorful box!");
+			superPlayer();
+			break;
 	}
 	box.kill();
 	score += 50;
@@ -524,6 +545,40 @@ function heal()	{
 		var newlife = lives.getChildAt(dead_lives-1);
 		newlife.reset(this.game.width - 10 - (MAX_LIFE * 30) + 30*(dead_lives-1) , 30);
 	}
+}
+
+// When got a colorful box, the player can become undead and kill the enemies (except turrets) with bumping
+function superPlayer(){
+	var tint = player.tint;
+	player.alpha = 1;
+	tweenPlayer.stop();
+	playerSuper = true;
+	playerSpawnUndead = false;
+	var startTime = Date.now();
+	var tween1 = game.add.tween(player).to({ tint: 0xff00ff }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
+	var tween2 = game.add.tween(player).to({ tint: 0x00ffff }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
+	var tween3 = game.add.tween(player).to({ tint: 0x0000ff }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
+	var tween4 = game.add.tween(player).to({ tint: 0xff00ff }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
+	var tween5 = game.add.tween(player).to({ tint: 0xff0000 }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
+	var tween6 = game.add.tween(player).to({ tint: 0xffff00 }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
+	tween1.chain(tween2);
+	tween2.chain(tween3);
+	tween3.chain(tween4);
+	tween4.chain(tween5);
+	tween5.chain(tween6);
+	tween6.chain(tween1);
+	tween1.start();
+	game.time.events.add(playerSuperTime, function(){
+		tween1.stop();
+		tween2.stop();
+		tween3.stop();
+		tween4.stop();
+		tween5.stop();
+		tween6.stop();
+		player.tint = tint;
+		playerSuper = false;
+		//console.log("Now player can be killed");
+	}, this);
 }
 
 function swap(){
