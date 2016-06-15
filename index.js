@@ -41,6 +41,10 @@ io.on('connection', function(socket){
   socket.on('vibrate', function(msg){
 	io.emit('connectOK', msg);
   });
+  socket.on('ULT', function(msg){
+    //console.log('Y: ' + msg);
+	io.emit('ULT', msg);
+  });
   socket.on('ultra', function(msg){
 	if(msg == 'start') io.emit('start', msg);
 	else io.emit('ultra', msg);

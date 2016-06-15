@@ -19,32 +19,31 @@ var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '
 var socket = io();
 
 function preload() {
-
     game.load.image('gamestart', '/assets/gamestart.png');
     game.load.image('sky', '/assets/seatiles.png');
     game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');
-		game.load.image('lb', '/assets/lb.png');
-		game.load.image('player', '/assets/THSR.png');
-		game.load.spritesheet('enemy0', '/assets/shump_assets/mob_turret_1.png', 24, 24);
-		game.load.image('enemy1', '/assets/EMU800.png');
-		game.load.image('enemy2', '/assets/EMU700.png');
-		game.load.image('enemy3', '/assets/shump_assets/mob_flagship_1.png');
-		game.load.image('enemy_bullet1', '/assets/bullet.png');
-		game.load.image('enemy_bullet2', '/assets/shump_assets/mob_bullet_2.png');
-		game.load.image('square', '/assets/tile_question_box.png');
-		game.load.image('ultsign', '/assets/50ult.png');
-		game.load.image('ultsign_g', '/assets/50ult_gray.png');
+	game.load.image('lb', '/assets/lb.png');
+	game.load.image('player', '/assets/THSR.png');
+	game.load.spritesheet('enemy0', '/assets/shump_assets/mob_turret_1.png', 24, 24);
+	game.load.image('enemy1', '/assets/EMU800.png');
+	game.load.image('enemy2', '/assets/EMU700.png');
+	game.load.image('enemy3', '/assets/shump_assets/mob_flagship_1.png');
+	game.load.image('enemy_bullet1', '/assets/bullet.png');
+	game.load.image('enemy_bullet2', '/assets/shump_assets/mob_bullet_2.png');
+	game.load.image('square', '/assets/tile_question_box.png');
+	game.load.image('ultsign', '/assets/50ult.png');
+	game.load.image('ultsign_g', '/assets/50ult_gray.png');
 
-		game.load.spritesheet('bonus_cube', 'assets/shump_assets/cubes.png', 24, 24);
-		game.load.spritesheet('explosion', 'assets/shump_assets/explosion_1.png', 32, 32);
-		game.load.spritesheet('shield', 'assets/magic.png', 192, 192);
-    //game.load.spritesheet('dude', '/assets/dude.png', 32, 48);
-	//game.load.spritesheet('player_bullet', '/assets/shump_assets/player_bullets.png');
+	game.load.spritesheet('bonus_cube', 'assets/shump_assets/cubes.png', 24, 24);
+	game.load.spritesheet('explosion', 'assets/shump_assets/explosion_1.png', 32, 32);
+	game.load.spritesheet('shield', 'assets/magic.png', 192, 192);
 }
 
 var player_bullet_velocity = 750, background_movement = 1;
-var enemy_bullet_velocity = 250;
-
+var enemy_bullet_velocity = 500, enemy_bullet_velocity2 = 250, enemy_bullet_velocity3 = 200;
+var DIFFICULTY = 1, DIFFICULTY_CHANGE=0;
+var levelup_loop;
+var difficultyText;
 var background;
 var player, bullets, lbs;
 var enemys = new Array(), enemyBullets = new Array();
@@ -68,11 +67,11 @@ var ultsign_g;
 var gameOverText;
 var gamestart;
 var weaponMode=0;
-var fireRate = 100;
+var fireRate = 200;
 var nextFire = 0;
-
+const BULLET = 0, RAY = 1;
 // The following 3 variables is used to make player undead at spawn state to prevent instantaneous death upon spawning.
-var playerSpawnUndeadTime = 10000; // in milliseconds
+var playerSpawnUndeadTime = 3000; // in milliseconds
 var playerSpawnUndead = false;	//whether player is undead
 var tweenPlayer; //the tween effects of player
 var shield;
@@ -98,6 +97,7 @@ function create() {
 	setupULT();
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
 	ultText = game.add.text(65, 50, 'ULT state: restore', { fontSize: '20px', fill: '#000' });
+	//difficultyText = game.add.text(16, 100, 'Difficulty: 1', { fontSize: '20px', fill: '#000' });
 }
 
 var newX = 0;
@@ -111,41 +111,44 @@ function update() {
 	}, this);
 
     socket.on('setX', function(data) {
-			newX = parseFloat(data);
+		newX = parseFloat(data);
     });
-		socket.on('setY', function(data) {
-			newY = parseFloat(data);
-	    });
-		socket.on('ultra', function(data) {
-			if(player.alive)
-				launchult();
-	    });
-		socket.on('start', function(data) {
-			state=0;
-			if( !player.alive )	{
-				setupPlayer(false);
-				weaponLevel=0;
-				score=0;
+	socket.on('setY', function(data) {
+		newY = parseFloat(data);
+	});
+	socket.on('ultra', function(data) {
+		if(player.alive)
+			launchult();
+	});
+	socket.on('start', function(data) {
+		state=0;
+		if( !player.alive )	{
+			setupPlayer(false);
+			weaponLevel=0;
+			score=0;
 
-				setupBullets();
-				setupPlayerLives();
-				gameOverText.kill();
-			}
-			resetMenu();
-		});
-		socket.on('shoot', function(data) {
-			if(state===0){
-				game.time.events.add(Phaser.Timer.SECOND * 10, fillult, this);
-				state=1;
-				gamestart.kill();
-				setPlayerSpawnTimeUndead(); // game start
+			setupBullets();
+			setupPlayerLives();
+			gameOverText.kill();
+		}
+		resetMenu();
+	});
+	socket.on('shoot', function(data) {
+		if(state===0){
+			game.time.events.add(Phaser.Timer.SECOND * 10, fillult, this);
+			levelup_loop=game.time.events.loop(Phaser.Timer.SECOND * 25, difficultyUP, this);
+			state=1;
+			gamestart.kill();
+			setPlayerSpawnTimeUndead(); // game start
 
-			} else{
-				fire();
-			}
-	  });
-		scoreText.text = 'Score: ' + score;
-		ultText.text = 'ULT state: ' + ultstate[ult];
+		} else{
+			fire();
+		}
+	});
+		
+	scoreText.text = 'Score: ' + score;
+	ultText.text = 'ULT state: ' + ultstate[ult];
+	//difficultyText.text = 'DIFFICULTY: ' + DIFFICULTY;
 
     if(state===1){
 
@@ -161,8 +164,8 @@ function update() {
 				add_boxes();
 
 				for( var i = 0 ; i < 4 ; i ++ ) {
-					game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this);
-					game.physics.arcade.overlap(lbs, enemys[i], lbenemyHit, null, this);
+					if(weaponMode===BULLET) game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this);
+					else if(weaponMode===RAY) game.physics.arcade.overlap(lbs, enemys[i], lbenemyHit, null, this);
 					if( i != 0 )	// player(on sky) cannot touch enemys[0](on land)
 						game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
 				}
@@ -174,8 +177,24 @@ function update() {
 		}
 }
 
+function difficultyUP(){
+	DIFFICULTY++;
+	DIFFICULTY_CHANGE=1;
+	enemy_bullet_velocity+=50;
+	enemy_bullet_velocity+=25;
+	enemy_bullet_velocity+=20;
+	difficultyText = game.add.text(game.width/2, game.height/2, 'Difficulty: '+DIFFICULTY, { fontSize: '20px', fill: '#000' });
+	difficultyText.anchor.setTo(0.5, 0.5);
+	game.time.events.add(Phaser.Timer.SECOND * 5, difficultyTextDel, this);
+}
+
+function difficultyTextDel(){
+	DIFFICULTY_CHANGE=0;
+	difficultyText.kill();
+}
+
 function fire() {
-	if(weaponMode===0){
+	if(weaponMode===BULLET){
 		if (player.alive && game.time.now > nextFire && bullets.countDead() > 0){
 			nextFire = game.time.now + fireRate;
 			var bullet = bullets.getFirstDead();
@@ -203,7 +222,7 @@ function fire() {
 			}
 		}
 	}
-	else if(weaponMode===1){
+	else if(weaponMode===RAY){
 		if (player.alive && game.time.now > nextFire && lbs.countDead() > 0){
 			nextFire = game.time.now + fireRate;
 			var lb = lbs.getFirstDead();
@@ -221,6 +240,7 @@ function fillult(){
 	ult=1;
 	ultsign = game.add.sprite(16, 36, 'ultsign');
 	ultText.fill='#F00';
+	socket.emit('ULT', 'filled');
 }
 
 function launchult(){
@@ -285,6 +305,7 @@ function fadeBox(box) {
 }
 
 function spawn_enemy() {
+	if(DIFFICULTY_CHANGE===0){
 		if (game.time.now > nextEnemy0 && enemys[0].countDead() > 0) {
 			nextEnemy0 = game.time.now + game.rnd.integerInRange(10000, 10000);
 			var enemy = enemys[0].getFirstExists(false);
@@ -300,40 +321,41 @@ function spawn_enemy() {
 			enemy.loop = game.time.events.loop(Phaser.Timer.SECOND * 10, enemy0_attack, this, enemy);
 		}
 		if (game.time.now > nextEnemy && enemys[1].countDead() > 0) {
-        nextEnemy = game.time.now + game.rnd.integerInRange(1000, 3000);
-        var enemy = enemys[1].getFirstExists(false);
-        // spawn at a random location top of the screen
-        enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0, ENEMY_1_HEALTH);
-        // also randomize the speed
-        enemy.body.velocity.y = game.rnd.integerInRange(30, 60);
+			nextEnemy = game.time.now + game.rnd.integerInRange(1000, 3000);
+			var enemy = enemys[1].getFirstExists(false);
+			// spawn at a random location top of the screen
+			enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0, ENEMY_1_HEALTH);
+			// also randomize the speed
+			enemy.body.velocity.y = game.rnd.integerInRange(30, 60);
 
-				enemy.enemyNextFire = 0;
-    }
+			enemy.enemyNextFire = 0;
+		}
 		if (game.time.now > nextEnemy2 && enemys[2].countDead() > 0) {
-        nextEnemy2 = game.time.now + game.rnd.integerInRange(2000, 4000);
-        var enemy = enemys[2].getFirstExists(false);
-        // spawn at a random location top of the screen
-        enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0, ENEMY_2_HEALTH);
-				var target = game.rnd.integerInRange(20, game.width - 20);
-				enemy.rotation = game.physics.arcade.moveToXY(
-				  enemy, target, game.height,
-				  game.rnd.integerInRange(40, 80)
-				) - Math.PI / 2;
+			nextEnemy2 = game.time.now + game.rnd.integerInRange(2000, 4000);
+			var enemy = enemys[2].getFirstExists(false);
+			// spawn at a random location top of the screen
+			enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0, ENEMY_2_HEALTH);
+			var target = game.rnd.integerInRange(20, game.width - 20);
+			enemy.rotation = game.physics.arcade.moveToXY(
+				enemy, target, game.height,
+				game.rnd.integerInRange(40, 80)
+			) - Math.PI / 2;
 
-				enemy.enemyNextFire = 0;
-    }
+			enemy.enemyNextFire = 0;
+		}
 		if (game.time.now > nextEnemy3 && enemys[3].countDead() > 0) {
-				nextEnemy3 = game.time.now + game.rnd.integerInRange(60000, 120000);
-				var enemy = enemys[3].getFirstExists(false);
-				// spawn at a random location top of the screen
-				enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0, ENEMY_3_HEALTH);
-				// also randomize the speed
-				enemy.body.velocity.y = game.rnd.integerInRange(10, 20);
+			nextEnemy3 = game.time.now + game.rnd.integerInRange(60000, 120000);
+			var enemy = enemys[3].getFirstExists(false);
+			// spawn at a random location top of the screen
+			enemy.reset(game.rnd.integerInRange(20, game.width - 20), 0, ENEMY_3_HEALTH);
+			// also randomize the speed
+			enemy.body.velocity.y = game.rnd.integerInRange(10, 20);
 
-				enemy.enemyNextFire = 0;
+			enemy.enemyNextFire = 0;
 
-				console.log("Ewidth = " + enemy.width + ", Eheight = " + enemy.height);
-	  }
+			console.log("Ewidth = " + enemy.width + ", Eheight = " + enemy.height);
+		}
+	}
 }
 
 function enemy0_attack(enemy)	{
@@ -380,7 +402,7 @@ function enemy_fire() {
 			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(2000, 5000);
 			var enemy_bullet = enemyBullets[0].getFirstDead();
 			enemy_bullet.reset(enemy.x, enemy.y + enemy.height/2);
-			game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity);
+			game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity2);
 		}
 	}, this);
 
@@ -390,11 +412,11 @@ function enemy_fire() {
 			for( var i = 0 ; i < 5 ; i ++ )	{
 				var enemy_bullet = enemyBullets[1].getFirstDead();
 				enemy_bullet.reset(enemy.x + 50, enemy.y + enemy.height/2 - i*30);
-				game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity*0.8);
+				game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity3);
 
 				enemy_bullet = enemyBullets[1].getFirstDead();
 				enemy_bullet.reset(enemy.x - 50, enemy.y + enemy.height/2 - i*30);
-				game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity*0.8);
+				game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity3);
 			}
 		}
 	}, this);
@@ -407,7 +429,7 @@ function enemyHit(bullet, enemy) {
 	explode(enemy);
 	score += 10;
 
-	console.log('bounds = ' + enemy.getBounds() );
+	//console.log('bounds = ' + enemy.getBounds() );
 }
 
 function lbenemyHit(bullet, enemy) {
@@ -477,6 +499,9 @@ function PlayerVsBox(player, box)	{
 			heal();
 			break;
 		case green:
+			weaponLevel--;
+			if(fireRate>100)
+				fireRate-=20;
 			break;
 		case chocolate:
 			break;
@@ -515,13 +540,14 @@ function explode(sprite) {
 	var explosion = explosionPool.getFirstExists(false);
 	explosion.reset(sprite.x, sprite.y);
 	explosion.play('boom', 15, false, true);
-	// add the original sprite's velocity to the explosion
 	explosion.body.velocity.x = sprite.body.velocity.x;
 	explosion.body.velocity.y = sprite.body.velocity.y;
 }
 
 function gameOver(){
 	state=-1;
+	DIFFICULTY=1;
+	game.time.events.remove(levelup_loop);
 	gameOverText = game.add.text(game.width/2, game.height / 2, 'Game Over!', { font: '32px sans-serif', fill: '#fff'});
 	gameOverText.anchor.setTo(0.5, 0.5);
 }
@@ -529,7 +555,7 @@ function gameOver(){
 function setupBackground(){
 	game.physics.startSystem(Phaser.Physics.ARCADE);
 	// Stretch to fill
-  //game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
+	//game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
 
 	background = game.add.tileSprite(0, 0, window.innerWidth, window.innerHeight, 'sky');
 	background.tileScale.x = window.innerWidth/background.width;
