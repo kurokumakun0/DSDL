@@ -80,7 +80,7 @@ var enemys = new Array();
 var enemy_num = [4, 20, 10, 2];
 var enemyBullets = new Array();
 var enemyBullet_num = [400, 400];
-var enemy_bullet_velocity = 500, enemy_bullet_velocity2 = 250, enemy_bullet_velocity3 = 200;
+var enemy_bullet_velocity = 350, enemy_bullet_velocity2 = 250, enemy_bullet_velocity3 = 200;
 var nextEnemy0 = 0, nextEnemy = 0, nextEnemy2 = 0, nextEnemy3 = 10000;
 
 
@@ -434,12 +434,9 @@ function enemyHit(bullet, enemy) {
 	//if (enemy.alive) play hit animation(not available yet) else play explode animation
 	explode(enemy);
 	score += 10;
-
-	//console.log('bounds = ' + enemy.getBounds() );
 }
 
 function lbenemyHit(bullet, enemy) {
-	//bullet.kill();
 	enemy.damage(1);
 	//if (enemy.alive) play hit animation(not available yet) else play explode animation
 	explode(enemy);
@@ -451,6 +448,7 @@ function playerHit(player, enemy) {
 		return;
 	}
 	explode(enemy);
+	explode(player);
 	enemy.kill();
 	player.kill();
 	player.shield.kill();
@@ -459,13 +457,9 @@ function playerHit(player, enemy) {
 	var life = lives.getFirstAlive();
     if (life !== null) {
 			life.kill();
-			explode(player);
 			socket.emit('vibrate', 'hit');
-			// re alive player
 			setupPlayer();
     } else {
-			//player.kill();
-			explode(player);
 			socket.emit('vibrate', 'die');
 			gameOver();
     }
@@ -475,6 +469,7 @@ function playerHitByBullet(player, bullet) {
 	if (playerSpawnUndead === true) {
 		return;
 	}
+	explode(player);
 	bullet.kill();
 	player.kill();
 	player.shield.kill();
@@ -483,20 +478,15 @@ function playerHitByBullet(player, bullet) {
 	var life = lives.getFirstAlive();
     if (life !== null) {
 			life.kill();
-			explode(player);
 			socket.emit('vibrate', 'hit');
-			// re alive player
 			setupPlayer();
     } else {
-			//player.kill();
-			explode(player);
 			socket.emit('vibrate', 'die');
 			gameOver();
     }
 }
 
 function PlayerVsBox(player, box)	{
-	//if( box.type === 2 )	{
 	switch(box.type)	{
 		case yellow:
 			break;
@@ -507,8 +497,8 @@ function PlayerVsBox(player, box)	{
 		case green:
 			weaponLevel--;
 			if(fireRate>100){
-				fireRate-=20;
-				lbfireRate-=60;
+				fireRate-=25;
+				lbfireRate-=100;
 			}
 			break;
 		case chocolate:
@@ -537,8 +527,8 @@ function heal()	{
 }
 
 function swap(){
-	if(weaponMode === 0) weaponMode=1;
-	else weaponMode=0;
+	if(weaponMode===BULLET) weaponMode=RAY;
+	else weaponMode=BULLET;
 }
 
 function explode(sprite) {
@@ -553,7 +543,7 @@ function explode(sprite) {
 }
 
 function gameOver(){
-	state=-1;
+	state=ENDGAME;
 	DIFFICULTY=1;
 	game.time.events.remove(levelup_loop);
 	gameOverText = game.add.text(game.width/2, game.height / 2, 'Game Over!', { font: '32px sans-serif', fill: '#fff'});
@@ -562,9 +552,9 @@ function gameOver(){
 
 function setupBackground(){
 	game.physics.startSystem(Phaser.Physics.ARCADE);
+	
 	// Stretch to fill
 	//game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
-
 	background = game.add.tileSprite(0, 0, window.innerWidth, window.innerHeight, 'sky');
 	background.tileScale.x = window.innerWidth/background.width;
 	background.tileScale.y = window.innerHeight/background.height;
