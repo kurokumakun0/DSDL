@@ -19,9 +19,9 @@ var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '
 var socket = io();
 
 function preload() {
-    game.load.image('gamestartMenu', '/assets/gamestart.png');
-    game.load.image('sky', '/assets/seatiles.png');
-    game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');
+	game.load.image('gamestartMenu', '/assets/gamestart.png');
+	game.load.image('sky', '/assets/seatiles.png');
+	game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');
 	game.load.image('lb', '/assets/lb.png');
 	game.load.image('player', '/assets/THSR.png');
 	game.load.spritesheet('enemy0', '/assets/shump_assets/mob_turret_1.png', 24, 24);
@@ -121,7 +121,7 @@ function update() {
 	
 	updateText();
 
-    if(state===INGAME){
+	if(state===INGAME){
 
 		player.body.velocity.x = 10*(-newY);
 		player.body.velocity.y = 10*(-newX);
@@ -156,9 +156,9 @@ function update() {
 }
 
 function listenSocket(){
-    socket.on('setX', function(data) {
+	socket.on('setX', function(data) {
 		newX = parseFloat(data);
-    });
+	});
 	socket.on('setY', function(data) {
 		newY = parseFloat(data);
 	});
@@ -325,11 +325,11 @@ function add_boxes()	{
 }
 
 function fadeBox(box) {
-		box.kill();
+	box.kill();
 }
 
 function fadeLightning(lightning) {
-		lightning.kill();
+	lightning.kill();
 }
 
 function spawn_enemy() {
@@ -491,14 +491,14 @@ function playerHit(player, enemy) {
 	game.time.events.remove(player.shield.loop);
 
 	var life = lives.getFirstAlive();
-    if (life !== null) {
-			life.kill();
-			socket.emit('vibrate', 'hit');
-			setupPlayer();
-    } else {
-			socket.emit('vibrate', 'die');
-			gameOver();
-    }
+	if (life !== null) {
+		life.kill();
+		socket.emit('vibrate', 'hit');
+		setupPlayer();
+	} else {
+		socket.emit('vibrate', 'die');
+		gameOver();
+	}
 }
 
 function playerHitByBullet(player, bullet) {
@@ -516,14 +516,14 @@ function playerHitByBullet(player, bullet) {
 	game.time.events.remove(player.shield.loop);
 
 	var life = lives.getFirstAlive();
-    if (life !== null) {
-			life.kill();
-			socket.emit('vibrate', 'hit');
-			setupPlayer();
-    } else {
-			socket.emit('vibrate', 'die');
-			gameOver();
-    }
+	if (life !== null) {
+		life.kill();
+		socket.emit('vibrate', 'hit');
+		setupPlayer();
+	} else {
+		socket.emit('vibrate', 'die');
+		gameOver();
+	}
 }
 
 function PlayerVsBox(player, box)	{
@@ -681,21 +681,21 @@ function setPlayerSpawnTimeUndead(){
 
 function setupBullets(){
 	bullets = game.add.group();
-    bullets.enableBody = true;
-    bullets.physicsBodyType = Phaser.Physics.ARCADE;
+	bullets.enableBody = true;
+	bullets.physicsBodyType = Phaser.Physics.ARCADE;
 
-    bullets.createMultiple(1000, 'bullet');
-    bullets.setAll('checkWorldBounds', true);
-    bullets.setAll('outOfBoundsKill', true);
+	bullets.createMultiple(1000, 'bullet');
+	bullets.setAll('checkWorldBounds', true);
+	bullets.setAll('outOfBoundsKill', true);
 }
 
 function setupLbs(){
 	lbs = game.add.group();
-    lbs.enableBody = true;
-    lbs.physicsBodyType = Phaser.Physics.ARCADE;
+	lbs.enableBody = true;
+	lbs.physicsBodyType = Phaser.Physics.ARCADE;
 
-    lbs.createMultiple(30, 'lb');
-    lbs.setAll('checkWorldBounds', true);
+	lbs.createMultiple(30, 'lb');
+	lbs.setAll('checkWorldBounds', true);
 	lbs.setAll('outOfBoundsKill', true);
 	lbs.setAll('anchor.x', 0.5);
 	lbs.setAll('anchor.y', 0.8);
@@ -703,9 +703,9 @@ function setupLbs(){
 
 function setupLightnings(){
 	lightnings = game.add.group();
-    lightnings.enableBody = true;
-    lightnings.physicsBodyType = Phaser.Physics.ARCADE;
-    lightnings.createMultiple(20, 'lightning');
+	lightnings.enableBody = true;
+	lightnings.physicsBodyType = Phaser.Physics.ARCADE;
+	lightnings.createMultiple(20, 'lightning');
 	lightnings.setAll('anchor.x', 0.5);
 }
 
