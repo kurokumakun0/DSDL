@@ -99,6 +99,7 @@ var nextBox = 0;
 var explosionPool;
 var fireballs, fireball1, fireball2, fireball3;
 var fireballEvent1, fireballEvent2, fireballEvent3;
+var fireballStartTime;
 var ballsSurrounded=false;
 
 function create() {
@@ -154,12 +155,14 @@ function update() {
 				}
 			}
 			if(ballsSurrounded === true){
-				fireball1.position.x = player.position.x+43;
-				fireball1.position.y = player.position.y+25;
-				fireball2.position.x = player.position.x-43;
-				fireball2.position.y = player.position.y+25;
-				fireball3.position.x = player.position.x;
-				fireball3.position.y = player.position.y-50;
+				var par = (game.time.now-fireballStartTime)/1000*Math.PI;
+				//console.log(par);
+				fireball1.position.x = player.position.x+100*Math.sin(par);
+				fireball1.position.y = player.position.y+100*Math.cos(par);
+				fireball2.position.x = player.position.x+100*Math.sin(par+2/3*Math.PI);
+				fireball2.position.y = player.position.y+100*Math.cos(par+2/3*Math.PI);
+				fireball3.position.x = player.position.x+100*Math.sin(par+4/3*Math.PI);
+				fireball3.position.y = player.position.y+100*Math.cos(par+4/3*Math.PI);
 				game.physics.arcade.overlap(fireballs, enemys[i], fireballenemyHit, null, this);
 			}
 			if( i != 0 )	// player(on sky) cannot touch enemys[0](on land)
@@ -580,7 +583,7 @@ function playerHitByBullet(player, bullet) {
 function PlayerVsBox(player, box)	{
 	switch(box.type)	{
 		case yellow:
-			FireBallSurround(player);
+			//FireBallSurround(player);
 			weaponLevel--
 			break;
 		case orange:
@@ -610,7 +613,7 @@ function PlayerVsBox(player, box)	{
 			break;
 	}
 	
-	//FireBallSurround(player);
+	FireBallSurround(player);
 
 	box.kill();
 	score += 50;
@@ -666,6 +669,7 @@ function swap(){
 }
 
 function FireBallSurround(sprite){
+	fireballStartTime = game.time.now;
 	ballsSurrounded=true;
 	//console.log("in function");
 	if (fireballs.countDead() === 0) {
@@ -678,19 +682,19 @@ function FireBallSurround(sprite){
 		return;
 	}
 	fireball1 = fireballs.getFirstDead();
-	fireball1.reset(sprite.x+43, sprite.y+25);
+	fireball1.reset(sprite.x+86.6, sprite.y+50);
 	fireball1.animations.add('flame', [0,1,2], 3, true);
 	fireball1.play('flame', 15, true, false);
 	fireballEvent1 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball1);
 
 	fireball2 = fireballs.getFirstDead();
-	fireball2.reset(sprite.x-43, sprite.y-25);
+	fireball2.reset(sprite.x-86.6, sprite.y-50);
 	fireball2.animations.add('flame', [0,1,2], 3, true);
 	fireball2.play('flame', 15, true, false);
 	fireballEvent2 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball2);
 
 	fireball3 = fireballs.getFirstDead();
-	fireball3.reset(sprite.x, sprite.y-50);
+	fireball3.reset(sprite.x, sprite.y-100);
 	fireball3.animations.add('flame', [0,1,2], 3, true);
 	fireball3.play('flame', 15, true, false);
 	fireballEvent3 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball3);
