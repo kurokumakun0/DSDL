@@ -22,9 +22,8 @@ function preload() {
 	game.load.image('gamestartMenu', '/assets/gamestart.png');
 	game.load.image('sky', '/assets/seatiles.png');
 	game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');
-	game.load.image('lb', '/assets/lb.png');
+	game.load.image('ray', '/assets/ray.png');
 	game.load.image('player', '/assets/THSR.png');
-	game.load.spritesheet('enemy0', '/assets/shump_assets/mob_turret_1.png', 24, 24);
 	game.load.image('enemy1', '/assets/EMU800.png');
 	game.load.image('enemy2', '/assets/EMU700.png');
 	game.load.image('enemy3', '/assets/shump_assets/mob_flagship_1.png');
@@ -34,20 +33,22 @@ function preload() {
 	game.load.image('ultsign', '/assets/50ult.png');
 	game.load.image('ultsign_g', '/assets/50ult_gray.png');
 	game.load.spritesheet('bonus_cube', 'assets/shump_assets/cubes.png', 24, 24);
+	game.load.spritesheet('enemy0', '/assets/shump_assets/mob_turret_1.png', 24, 24);
 	game.load.spritesheet('explosion', 'assets/shump_assets/explosion_1.png', 32, 32);
 	game.load.spritesheet('shield', 'assets/magic.png', 192, 192);
 	game.load.spritesheet('lightning', 'assets/lightning.png', 55, 237);
-	//game.load.image('rocket', 'assets/arrow_green.png');
 	game.load.spritesheet('rocket', 'assets/arrows.png', 48, 48);
+	game.load.spritesheet('fireball', '/assets/fireball.png', 32, 30);
 }
 
 //Weapon Ult
 const BULLET = 0, RAY = 1, LIGHTNING = 2, MAX_WEAPON_LEVEL = 4;
 const EMPTY = 0, FILLED = 1; //ULT state
-var bullets, lbs, lightnings;
+var bullets, rays, lightnings;
 var weaponLevel = 0;
 var weaponMode = game.rnd.integerInRange(BULLET,LIGHTNING);
-var fireRate, lbfireRate, lightningfireRate;
+var weapon_num = [500, 20, 10];
+var fireRate, rayfireRate, lightningfireRate;
 var nextFire = 0;
 var player_bullet_velocity = 750;
 var ultText, ultsign, ultsign_g;
@@ -89,7 +90,7 @@ const ENEMY_0_HEALTH = 5, ENEMY_1_HEALTH = 1, ENEMY_2_HEALTH = 3, ENEMY_3_HEALTH
 var enemys = new Array();
 var enemy_num = [4, 20, 10, 2];
 var enemyBullets = new Array();
-var enemyBullet_num = [400, 400];
+var enemyBullet_num = [200, 200];
 var enemy_bullet_velocity = 350, enemy_bullet_velocity2 = 250, enemy_bullet_velocity3 = 200;
 var nextEnemy0 = 0, nextEnemy = 0, nextEnemy2 = 0, nextEnemy3 = 10000;
 
@@ -98,13 +99,18 @@ const yellow = 0, orange = 1, green = 2, chocolate = 3, blue = 4, dark_blue = 5,
 var boxes;
 var nextBox = 0;
 var explosionPool;
+var fireballs, fireball1, fireball2, fireball3;
+var fireballEvent1, fireballEvent2, fireballEvent3;
+var fireballStartTime;
+var ballsSurrounded=false;
 
 function create() {
 	setupBackground();
 	setupBullets();
-	setupLbs();
+	setupRays();
 	setupLightnings();
 	setupFireRate();
+	setupFireBalls();
 	setupEnemys();
 	setupEnemyBullets();
 	setupPlayer(false);
@@ -148,12 +154,23 @@ function update() {
 
 		for( var i = 0 ; i < 4 ; i ++ ) {
 			if(weaponMode===BULLET) game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this);
-			else if(weaponMode===RAY) game.physics.arcade.overlap(lbs, enemys[i], lbenemyHit, null, this);
+			else if(weaponMode===RAY) game.physics.arcade.overlap(rays, enemys[i], rayenemyHit, null, this);
 			else if(weaponMode===LIGHTNING){
 				game.physics.arcade.overlap(lightnings, enemys[i], lightningenemyHit, null, this);
 				for(var j = 0 ; j < 2;  j ++ )	{
 					game.physics.arcade.overlap(lightnings, enemyBullets[i], lightningBulletHit, null, this);
 				}
+			}
+			if(ballsSurrounded === true){
+				var par = (game.time.now-fireballStartTime)/1000*Math.PI;
+				//console.log(par);
+				fireball1.position.x = player.position.x+100*Math.sin(par);
+				fireball1.position.y = player.position.y+100*Math.cos(par);
+				fireball2.position.x = player.position.x+100*Math.sin(par+2/3*Math.PI);
+				fireball2.position.y = player.position.y+100*Math.cos(par+2/3*Math.PI);
+				fireball3.position.x = player.position.x+100*Math.sin(par+4/3*Math.PI);
+				fireball3.position.y = player.position.y+100*Math.cos(par+4/3*Math.PI);
+				game.physics.arcade.overlap(fireballs, enemys[i], fireballenemyHit, null, this);
 			}
 			if( i != 0 )	// player(on sky) cannot touch enemys[0](on land)
 				game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
@@ -205,7 +222,7 @@ function listenSocket(){
 	});
 	socket.on('switch_weapon', function(msg){
 		 weaponMode = msg;
-  });
+	});
 }
 
 function updateText(){
@@ -256,12 +273,12 @@ function fire() {
 		}
 	}
 	else if(weaponMode===RAY){
-		if (player.alive && game.time.now > nextFire && lbs.countDead() > 0){
-			nextFire = game.time.now + lbfireRate;
-			var lb = lbs.getFirstDead();
-			lb.reset(player.x , player.y - 10);
-			lb.body.velocity.y = -player_bullet_velocity*5;
-			lb.scale.setTo(1+0.5*weaponLevel,1);
+		if (player.alive && game.time.now > nextFire && rays.countDead() > 0){
+			nextFire = game.time.now + rayfireRate;
+			var ray = rays.getFirstDead();
+			ray.reset(player.x , player.y - 10);
+			ray.body.velocity.y = -player_bullet_velocity*5;
+			ray.scale.setTo(1+0.5*weaponLevel,1);
 		}
 	}
 	else if(weaponMode===LIGHTNING){
@@ -349,6 +366,22 @@ function fadeBox(box) {
 function fadeLightning(lightning) {
 	lightning.kill();
 }
+
+function fadeFireball(fireball)	{
+	ballsSurrounded = false;
+	fireball.kill();
+}
+
+function resetFireballs(){
+	game.time.events.remove(fireballEvent1);
+	game.time.events.remove(fireballEvent1);
+	game.time.events.remove(fireballEvent1);
+	fireball1.kill();
+	fireball2.kill();
+	fireball3.kill();
+	ballsSurrounded = false;
+}
+
 
 function spawn_enemy() {
 	if (game.time.now > nextEnemy0 && enemys[0].countDead() > 0) {
@@ -504,7 +537,7 @@ function enemyHit(bullet, enemy) {
 	score += 10;
 }
 
-function lbenemyHit(bullet, enemy) {
+function rayenemyHit(bullet, enemy) {
 	enemy.damage(1);
 	//if (enemy.alive) play hit animation(not available yet) else play explode animation
 	explode(enemy);
@@ -512,6 +545,13 @@ function lbenemyHit(bullet, enemy) {
 }
 
 function lightningenemyHit(lightning, enemy) {
+	enemy.damage(1);
+	//if (enemy.alive) play hit animation(not available yet) else play explode animation
+	explode(enemy);
+	score += 10;
+}
+
+function fireballenemyHit(fireball, enemy) {
 	enemy.damage(1);
 	//if (enemy.alive) play hit animation(not available yet) else play explode animation
 	explode(enemy);
@@ -548,6 +588,8 @@ function playerHit(player, enemy) {
 	} else {
 		player.kill();
 		player.shield.kill();
+		if(ballsSurrounded === true)
+			resetFireballs();
 		socket.emit('vibrate', 'die');
 		gameOver();
 	}
@@ -574,6 +616,8 @@ function playerHitByBullet(player, bullet) {
 	} else {
 		player.kill();
 		player.shield.kill();
+		if(ballsSurrounded === true)
+			resetFireballs();
 		socket.emit('vibrate', 'die');
 		gameOver();
 	}
@@ -582,6 +626,8 @@ function playerHitByBullet(player, bullet) {
 function PlayerVsBox(player, box)	{
 	switch(box.type)	{
 		case yellow:
+			FireBallSurround(player);
+			weaponLevel--
 			break;
 		case orange:
 			weaponLevel--;
@@ -591,15 +637,13 @@ function PlayerVsBox(player, box)	{
 			weaponLevel--;
 			if(fireRate>100){
 				fireRate-=25;
-				lbfireRate-=100;
+				rayfireRate-=100;
 				lightningfireRate-=250;
 			}
 			break;
 		case chocolate:
 			break;
 		case blue:
-			weaponLevel--;
-			swap();
 			break;
 		case dark_blue:
 			break;
@@ -609,6 +653,7 @@ function PlayerVsBox(player, box)	{
 			superPlayer();
 			break;
 	}
+
 	box.kill();
 	score += 50;
 	if( weaponLevel < MAX_WEAPON_LEVEL )
@@ -660,6 +705,37 @@ function swap(){
 	if(weaponMode===BULLET) weaponMode=LIGHTNING;
 	else if(weaponMode===LIGHTNING) weaponMode=RAY;
 	else weaponMode=BULLET;
+}
+
+function FireBallSurround(sprite){
+	fireballStartTime = game.time.now;
+	ballsSurrounded=true;
+	if (fireballs.countDead() === 0) {
+		game.time.events.remove(fireballEvent1);
+		game.time.events.remove(fireballEvent2);
+		game.time.events.remove(fireballEvent3);
+		fireballEvent1 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball1);
+		fireballEvent2 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball2);
+		fireballEvent3 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball3);
+		return;
+	}
+	fireball1 = fireballs.getFirstDead();
+	fireball1.reset(sprite.x+86.6, sprite.y+50);
+	fireball1.animations.add('flame', [0,1,2], 3, true);
+	fireball1.play('flame', 15, true, false);
+	fireballEvent1 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball1);
+
+	fireball2 = fireballs.getFirstDead();
+	fireball2.reset(sprite.x-86.6, sprite.y-50);
+	fireball2.animations.add('flame', [0,1,2], 3, true);
+	fireball2.play('flame', 15, true, false);
+	fireballEvent2 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball2);
+
+	fireball3 = fireballs.getFirstDead();
+	fireball3.reset(sprite.x, sprite.y-100);
+	fireball3.animations.add('flame', [0,1,2], 3, true);
+	fireball3.play('flame', 15, true, false);
+	fireballEvent3 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball3);
 }
 
 function explode(sprite) {
@@ -740,35 +816,46 @@ function setupBullets(){
 	bullets.enableBody = true;
 	bullets.physicsBodyType = Phaser.Physics.ARCADE;
 
-	bullets.createMultiple(1000, 'bullet');
+	bullets.createMultiple(weapon_num[BULLET], 'bullet');
 	bullets.setAll('checkWorldBounds', true);
 	bullets.setAll('outOfBoundsKill', true);
 }
 
-function setupLbs(){
-	lbs = game.add.group();
-	lbs.enableBody = true;
-	lbs.physicsBodyType = Phaser.Physics.ARCADE;
+function setupRays(){
+	rays = game.add.group();
+	rays.enableBody = true;
+	rays.physicsBodyType = Phaser.Physics.ARCADE;
 
-	lbs.createMultiple(30, 'lb');
-	lbs.setAll('checkWorldBounds', true);
-	lbs.setAll('outOfBoundsKill', true);
-	lbs.setAll('anchor.x', 0.5);
-	lbs.setAll('anchor.y', 0.8);
+	rays.createMultiple(weapon_num[RAY], 'ray');
+	rays.setAll('checkWorldBounds', true);
+	rays.setAll('outOfBoundsKill', true);
+	rays.setAll('anchor.x', 0.5);
+	rays.setAll('anchor.y', 0.8);
 }
 
 function setupLightnings(){
 	lightnings = game.add.group();
 	lightnings.enableBody = true;
 	lightnings.physicsBodyType = Phaser.Physics.ARCADE;
-	lightnings.createMultiple(20, 'lightning');
+	lightnings.createMultiple(weapon_num[LIGHTNING], 'lightning');
 	lightnings.setAll('anchor.x', 0.5);
 }
 
 function setupFireRate(){
 	fireRate = 200;
-	lbfireRate=500;
+	rayfireRate=500;
 	lightningfireRate=2000;
+}
+
+function setupFireBalls(){
+	fireballs = game.add.group();
+	fireballs.enableBody = true;
+	fireballs.physicsBodyType = Phaser.Physics.ARCADE;
+	fireballs.createMultiple(3, 'fireball');
+	fireballs.setAll('anchor.x', 0.5);
+	fireballs.setAll('anchor.y', 0.5);
+	fireballs.setAll('scale.x', 0.8);
+	fireballs.setAll('scale.y', 0.8);
 }
 
 function setupEnemys(){
@@ -805,7 +892,6 @@ function setupEnemyBullets(){
 		enemyBullets[i].setAll('scale.x', 1.5);
 		enemyBullets[i].setAll('scale.y', 1.5);
 	}
-
 }
 
 function setupPlayerLives(){
@@ -837,7 +923,6 @@ function setupBoxes() {
 	boxes.setAll('outOfBoundsKill', true);
 	boxes.setAll('body.bounce.x', 1);
 	boxes.setAll('body.bounce.y', 1);
-
 }
 
 function setupExplosions() {
