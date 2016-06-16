@@ -97,8 +97,9 @@ const yellow = 0, orange = 1, green = 2, chocolate = 3, blue = 4, dark_blue = 5,
 var boxes;
 var nextBox = 0;
 var explosionPool;
-var fireballs, fireball1, fireball2, fireball3;
-var fireballEvent1, fireballEvent2, fireballEvent3;
+var fireballs;
+var Ball = new Array();
+var fireballEvent = new Array();
 var fireballStartTime;
 var ballsSurrounded=false;
 
@@ -157,12 +158,10 @@ function update() {
 			if(ballsSurrounded === true){
 				var par = (game.time.now-fireballStartTime)/1000*Math.PI;
 				//console.log(par);
-				fireball1.position.x = player.position.x+100*Math.sin(par);
-				fireball1.position.y = player.position.y+100*Math.cos(par);
-				fireball2.position.x = player.position.x+100*Math.sin(par+2/3*Math.PI);
-				fireball2.position.y = player.position.y+100*Math.cos(par+2/3*Math.PI);
-				fireball3.position.x = player.position.x+100*Math.sin(par+4/3*Math.PI);
-				fireball3.position.y = player.position.y+100*Math.cos(par+4/3*Math.PI);
+				for(var num = 0; num < 3; num++){
+					Ball[num].position.x = player.position.x+100*Math.sin(par+2*num/3*Math.PI);
+					Ball[num].position.y = player.position.y+100*Math.cos(par+2*num/3*Math.PI);
+				}
 				game.physics.arcade.overlap(fireballs, enemys[i], fireballenemyHit, null, this);
 			}
 			if( i != 0 )	// player(on sky) cannot touch enemys[0](on land)
@@ -171,7 +170,6 @@ function update() {
 		for( var i = 0 ; i < 2;  i ++ )	{
 			game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
 		}
-
 		game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this);
 	}
 }
@@ -363,12 +361,10 @@ function fadeFireball(fireball)	{
 }
 
 function resetFireballs(){
-	game.time.events.remove(fireballEvent1);
-	game.time.events.remove(fireballEvent1);
-	game.time.events.remove(fireballEvent1);
-	fireball1.kill();
-	fireball2.kill();
-	fireball3.kill();
+	for(var i = 0; i < 3; i ++){
+		game.time.events.remove(fireballEvent[i]);
+		Ball[i].kill();
+	}
 	ballsSurrounded = false;
 }
 
@@ -420,8 +416,6 @@ function spawn_enemy() {
 		enemy.body.velocity.y = game.rnd.integerInRange(10, 20);
 
 		enemy.enemyNextFire = 0;
-
-		console.log("Ewidth = " + enemy.width + ", Eheight = " + enemy.height);
 	}
 }
 
@@ -610,7 +604,6 @@ function PlayerVsBox(player, box)	{
 			superPlayer();
 			break;
 	}
-	
 	box.kill();
 	score += 50;
 	if( weaponLevel < MAX_WEAPON_LEVEL )
@@ -625,8 +618,8 @@ function heal()	{
 	}
 }
 
-// When got a colorful box, the player can become undead and kill the enemies (except turrets) with bumping
 function superPlayer(){
+// When got a colorful box, the player can become undead and kill the enemies (except turrets) with bumping
 	var tint = player.tint;
 	player.alpha = 1;
 	tweenPlayer.stop();
@@ -665,34 +658,23 @@ function swap(){
 }
 
 function FireBallSurround(sprite){
-	fireballStartTime = game.time.now;
-	ballsSurrounded=true;
 	if (fireballs.countDead() === 0) {
-		game.time.events.remove(fireballEvent1);
-		game.time.events.remove(fireballEvent2);
-		game.time.events.remove(fireballEvent3);
-		fireballEvent1 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball1);
-		fireballEvent2 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball2);
-		fireballEvent3 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball3);
+		for(var i = 0; i < 3; i++){
+			game.time.events.remove(fireballEvent[i]);
+			fireballEvent[i] = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, Ball[i]);
+		}
 		return;
 	}
-	fireball1 = fireballs.getFirstDead();
-	fireball1.reset(sprite.x+86.6, sprite.y+50);
-	fireball1.animations.add('flame', [0,1,2], 3, true);
-	fireball1.play('flame', 15, true, false);
-	fireballEvent1 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball1);
-
-	fireball2 = fireballs.getFirstDead();
-	fireball2.reset(sprite.x-86.6, sprite.y-50);
-	fireball2.animations.add('flame', [0,1,2], 3, true);
-	fireball2.play('flame', 15, true, false);
-	fireballEvent2 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball2);
-
-	fireball3 = fireballs.getFirstDead();
-	fireball3.reset(sprite.x, sprite.y-100);
-	fireball3.animations.add('flame', [0,1,2], 3, true);
-	fireball3.play('flame', 15, true, false);
-	fireballEvent3 = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, fireball3);
+	
+	ballsSurrounded=true;
+	fireballStartTime = game.time.now;
+	for(var i = 0; i < 3; i++){
+		Ball[i] = fireballs.getFirstDead();
+		Ball[i].reset(sprite.x+86.6, sprite.y+50);
+		Ball[i].animations.add('flame', [0,1,2], 3, true);
+		Ball[i].play('flame', 15, true, false);
+		fireballEvent[i] = game.time.events.add(Phaser.Timer.SECOND * 15, fadeFireball, this, Ball[i]);
+	}
 }
 
 function explode(sprite) {
@@ -724,8 +706,8 @@ function setupBackground(){
 	background.tileScale.y = window.innerHeight/background.height;
 }
 
-// Parameter: isSetSpawnTimeUndead (default = true): The player will be undead after spawn time for "playerSpawnUndeadTime" milliseconds if this is true
 function setupPlayer(isSetSpawnTimeUndead){
+// Parameter: isSetSpawnTimeUndead (default = true): The player will be undead after spawn time for "playerSpawnUndeadTime" milliseconds if this is true
 
 	isSetSpawnTimeUndead = typeof isSetSpawnTimeUndead !== 'undefined' ? isSetSpawnTimeUndead : true;
 
@@ -768,7 +750,6 @@ function setupBullets(){
 	bullets = game.add.group();
 	bullets.enableBody = true;
 	bullets.physicsBodyType = Phaser.Physics.ARCADE;
-
 	bullets.createMultiple(weapon_num[BULLET], 'bullet');
 	bullets.setAll('checkWorldBounds', true);
 	bullets.setAll('outOfBoundsKill', true);
@@ -778,7 +759,6 @@ function setupRays(){
 	rays = game.add.group();
 	rays.enableBody = true;
 	rays.physicsBodyType = Phaser.Physics.ARCADE;
-
 	rays.createMultiple(weapon_num[RAY], 'ray');
 	rays.setAll('checkWorldBounds', true);
 	rays.setAll('outOfBoundsKill', true);
@@ -816,13 +796,11 @@ function setupEnemys(){
 		enemys[i] = game.add.group();
 		enemys[i].enableBody = true;
 		enemys[i].physicsBodyType = Phaser.Physics.ARCADE;
-
 		enemys[i].createMultiple(enemy_num[i], 'enemy'+i);
 		enemys[i].setAll('checkWorldBounds', true);
 		enemys[i].setAll('outOfBoundsKill', true);
 		enemys[i].setAll('anchor.x', 0.5);
 		enemys[i].setAll('anchor.y', 0.5);
-
 		enemys[i].setAll('scale.x', (i == 3) ? 3 : 1.5);
 		enemys[i].setAll('scale.y', (i == 3) ? 3 : 1.5);
 	}
@@ -833,7 +811,6 @@ function setupEnemyBullets(){
 		enemyBullets[i] = game.add.group();
 		enemyBullets[i].enableBody = true;
 		enemyBullets[i].physicsBodyType = Phaser.Physics.ARCADE;
-
 		enemyBullets[i].createMultiple(enemyBullet_num[i], 'enemy_bullet' + (i+1) );
 		enemyBullets[i].setAll('checkWorldBounds', true);
 		enemyBullets[i].setAll('outOfBoundsKill', true);
@@ -865,7 +842,6 @@ function setupBoxes() {
 	boxes = game.add.group();
 	boxes.enableBody = true;
 	boxes.physicsBodyType = Phaser.Physics.ARCADE;
-
 	boxes.createMultiple(4, 'bonus_cube');
 	boxes.setAll('body.collideWorldBounds', true);
 	boxes.setAll('outOfBoundsKill', true);
@@ -901,6 +877,5 @@ function setupULT(){
 }
 
 </script>
-
 </body>
 </html>
