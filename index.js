@@ -32,11 +32,11 @@ io.on('connection', function(socket){
   });
   socket.on('X', function(msg){
     //console.log('X: ' + msg);
-	io.emit('setX', msg);
+	   io.emit('setX', msg);
   });
   socket.on('Y', function(msg){
     //console.log('Y: ' + msg);
-	io.emit('setY', msg);
+	   io.emit('setY', msg);
   });
   socket.on('vibrate', function(msg){
 	   io.emit('connectOK', msg);
@@ -48,6 +48,9 @@ io.on('connection', function(socket){
   socket.on('ultra', function(msg){
 	   if(msg == 'start') io.emit('start', msg);
 	    else io.emit('ultra', msg);
+  });
+  socket.on('switch_weapon', function(msg){
+	   io.emit('switch_weapon', msg);
   });
   /*socket.on('Z', function(msg){
     //console.log('Z: ' + msg);

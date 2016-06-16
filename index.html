@@ -119,9 +119,9 @@ function update() {
 	enemys[0].forEachAlive(function(enemy)	{
 		enemy.position.y += background_movement;
 	}, this);
-	
+
 	listenSocket();
-	
+
 	updateText();
 
 	if(state===INGAME){
@@ -192,6 +192,9 @@ function listenSocket(){
 			fire();
 		}
 	});
+	socket.on('switch_weapon', function(msg){
+		 weaponMode = msg;
+  });
 }
 
 function updateText(){
@@ -523,7 +526,7 @@ function playerHitByBullet(player, bullet) {
 		life.kill();
 		socket.emit('vibrate', 'hit');
 		setPlayerSpawnTimeUndead();
-		player.reset(game.width / 2, game.height - 50);	
+		player.reset(game.width / 2, game.height - 50);
 	} else {
 		player.kill();
 		player.shield.kill();
@@ -636,7 +639,7 @@ function gameOver(){
 
 function setupBackground(){
 	game.physics.startSystem(Phaser.Physics.ARCADE);
-	
+
 	// Stretch to fill
 	//game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
 	background = game.add.tileSprite(0, 0, window.innerWidth, window.innerHeight, 'sky');
