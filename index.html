@@ -44,7 +44,7 @@ const BULLET = 0, RAY = 1, LIGHTNING = 2, MAX_WEAPON_LEVEL = 4;
 const EMPTY = 0, FILLED = 1; //ULT state
 var bullets, lbs, lightnings;
 var weaponLevel = 0;
-var weaponMode = LIGHTNING;
+var weaponMode = game.rnd.integerInRange(BULLET,LIGHTNING);
 var fireRate, lbfireRate, lightningfireRate;
 var nextFire = 0;
 var player_bullet_velocity = 750;
@@ -53,7 +53,8 @@ var ult = EMPTY;
 var ultstate = ['restore','ready'];
 
 // Difficulty Score Menu Gameover Gamestate Background
-const INGAME = 1, CHANGING = 1, STARTGAME = 0, NOCHANGE = 0, ENDGAME = -1;
+const INGAME = 1, STARTGAME = 0, ENDGAME = -1;
+const CHANGING = 1, NOCHANGE = 0;
 var DIFFICULTY = 1;
 var DIFFICULTY_CHANGE=NOCHANGE;
 var difficultyText;
@@ -558,7 +559,6 @@ function PlayerVsBox(player, box)	{
 		case gray:
 			break;
 		case colorful:
-			//console.log("you got a colorful box!");
 			superPlayer();
 			break;
 	}
