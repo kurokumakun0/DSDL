@@ -37,6 +37,7 @@ function preload() {
 	game.load.spritesheet('explosion', 'assets/shump_assets/explosion_1.png', 32, 32);
 	game.load.spritesheet('shield', 'assets/magic.png', 192, 192);
 	game.load.spritesheet('lightning', 'assets/lightning.png', 55, 237);
+	game.load.spritesheet('rocket', 'assets/arrows.png', 48, 48);
 	game.load.spritesheet('fireball', '/assets/fireball.png', 32, 30);
 }
 
@@ -78,6 +79,7 @@ var tweenPlayer; //the tween effects of player
 var shield;
 var newX = 0;
 var newY = 0;
+var rocketPool, rocket_velocity = 800;
 
 // The following 2 variables are the properties of SuperPlayer. (see function superPlayer() below)
 var playerSuperTime = 10000;
@@ -118,6 +120,7 @@ function create() {
 	setupExplosions();
 	setupMenu();
 	setupULT();
+	setupRocket();
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
 	ultText = game.add.text(65, 50, 'ULT state: restore', { fontSize: '20px', fill: '#000' });
 }
@@ -127,9 +130,9 @@ function update() {
 	enemys[0].forEachAlive(function(enemy)	{
 		enemy.position.y += background_movement;
 	}, this);
-	
+
 	listenSocket();
-	
+
 	updateText();
 
 	if(state===INGAME){
@@ -139,12 +142,16 @@ function update() {
 
 		player.shield.position.x = player.position.x;
 		player.shield.position.y = player.position.y + player.height/2;;
-		
+
 		if(DIFFICULTY_CHANGE===NOCHANGE){
 			spawn_enemy();
 			enemy_fire();
 			add_boxes();
 		}
+
+		//player self group related
+		createRocket();
+		rotateRocket();
 
 		for( var i = 0 ; i < 4 ; i ++ ) {
 			if(weaponMode===BULLET) game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this);
@@ -166,6 +173,9 @@ function update() {
 			}
 			if( i != 0 )	// player(on sky) cannot touch enemys[0](on land)
 				game.physics.arcade.overlap(player, enemys[i], playerHit, null, this);
+
+			//rocket vs enemy
+			game.physics.arcade.overlap(rocketPool, enemys[i], enemyHit, null, this);
 		}
 		for( var i = 0 ; i < 2;  i ++ )	{
 			game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
@@ -480,6 +490,39 @@ function enemy_fire() {
 	}, this);
 }
 
+function createRocket()	{
+	if (game.time.now > player.nextRocket && rocketPool.countDead() > 0){
+		player.nextRocket = game.time.now + 3000;
+		for( var i = 0 ; i < 1 ; i ++ )	{
+			var rocket = rocketPool.getFirstDead();
+			rocket.reset(player.x + 50, player.y + player.height/2 + i*30);
+			rocket.target = enemys[game.rnd.integerInRange(0, 3)].getFirstAlive();
+			rocket.angle = 5 + i*20;
+			game.physics.arcade.velocityFromAngle( -95 - i*20, rocket_velocity, rocket.body.velocity);
+
+			rocket = rocketPool.getFirstDead();
+			rocket.reset(player.x - 50, player.y + player.height/2 + i*30);
+			rocket.target = enemys[game.rnd.integerInRange(0, 3)].getFirstAlive();
+			rocket.angle = -5 + i*20;
+			game.physics.arcade.velocityFromAngle( -85 + i*20, rocket_velocity, rocket.body.velocity);
+		}
+	}
+}
+
+function rotateRocket()	{
+	rocketPool.forEachAlive(function(rocket)	{
+		if( rocket.target != null && rocket.target.alive )	{
+			var radians = game.physics.arcade.angleBetween(rocket, rocket.target);
+			degrees = radians * (180/Math.PI);
+			game.physics.arcade.velocityFromAngle(degrees, rocket_velocity, rocket.body.velocity);
+			rocket.angle = degrees+90;
+		}else {
+			// velocity along original
+
+		}
+	}, this);
+}
+
 function enemyHit(bullet, enemy) {
 	bullet.kill();
 	enemy.damage(1);
@@ -563,7 +606,7 @@ function playerHitByBullet(player, bullet) {
 		life.kill();
 		socket.emit('vibrate', 'hit');
 		setPlayerSpawnTimeUndead();
-		player.reset(game.width / 2, game.height - 50);	
+		player.reset(game.width / 2, game.height - 50);
 	} else {
 		player.kill();
 		player.shield.kill();
@@ -604,6 +647,7 @@ function PlayerVsBox(player, box)	{
 			superPlayer();
 			break;
 	}
+
 	box.kill();
 	score += 50;
 	if( weaponLevel < MAX_WEAPON_LEVEL )
@@ -698,7 +742,7 @@ function gameOver(){
 
 function setupBackground(){
 	game.physics.startSystem(Phaser.Physics.ARCADE);
-	
+
 	// Stretch to fill
 	//game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
 	background = game.add.tileSprite(0, 0, window.innerWidth, window.innerHeight, 'sky');
@@ -719,6 +763,7 @@ function setupPlayer(isSetSpawnTimeUndead){
 
 	player.scale.setTo(1.5, 1.5);
 
+	// shield
 	player.shield = game.add.sprite(player.x, player.y, 'shield');
 	game.physics.arcade.enable(player.shield);
 	player.shield.anchor.x = 0.5;
@@ -728,6 +773,9 @@ function setupPlayer(isSetSpawnTimeUndead){
 	player.shield.loop = game.time.events.loop(Phaser.Timer.SECOND * 3, function()	{
 		player.shield.animations.play('effect');
 	}, this);
+
+	// Rocket related
+	player.nextRocket = 0;
 
 	//player.addChild(shield);
 
@@ -803,6 +851,11 @@ function setupEnemys(){
 		enemys[i].setAll('anchor.y', 0.5);
 		enemys[i].setAll('scale.x', (i == 3) ? 3 : 1.5);
 		enemys[i].setAll('scale.y', (i == 3) ? 3 : 1.5);
+
+		enemys[i].forEach(function(enemy)	{
+			enemy.body.width *= enemy.scale.x;
+			enemy.body.height *= enemy.scale.y;
+		});
 	}
 }
 
@@ -874,6 +927,39 @@ function resetMenu(){
 
 function setupULT(){
 	ultsign_g = game.add.sprite(16, 36, 'ultsign_g');
+}
+
+function setupRocket()	{
+	rocketPool = game.add.group();
+	rocketPool.enableBody = true;
+	rocketPool.physicsBodyType = Phaser.Physics.ARCADE;
+
+	rocketPool.createMultiple(40, 'rocket');
+	rocketPool.setAll('checkWorldBounds', true);
+	rocketPool.setAll('outOfBoundsKill', true);
+	rocketPool.setAll('anchor.x', 0.5);
+	rocketPool.setAll('anchor.y', 0.5);
+	rocketPool.setAll('scale.x', 0.75);
+	rocketPool.setAll('scale.y', 0.75);
+
+	 rocketPool.forEach(function(rocket)	{
+	 	//rocket.animations.add('rotate', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], 15);
+		// select the up arrow
+	 	rocket.frame = 42;
+	 });
+}
+
+/*
+ *	show debug message
+ */
+function render() {
+
+    game.debug.spriteInfo(player, 32, 32);
+    // game.debug.text('angularVelocity: ' + sprite.body.angularVelocity, 32, 200);
+    // game.debug.text('angularAcceleration: ' + sprite.body.angularAcceleration, 32, 232);
+    // game.debug.text('angularDrag: ' + sprite.body.angularDrag, 32, 264);
+    // game.debug.text('deltaZ: ' + sprite.body.deltaZ(), 32, 296);
+
 }
 
 </script>
