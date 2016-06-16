@@ -40,11 +40,12 @@ function preload() {
 }
 
 //Weapon Ult
-const BULLET = 0, EMPTY = 0, FILLED = 1, RAY = 1, LIGHTNING = 2, MAX_WEAPON_LEVEL = 4;
+const BULLET = 0, RAY = 1, LIGHTNING = 2, MAX_WEAPON_LEVEL = 4;
+const EMPTY = 0, FILLED = 1; //ULT state
 var bullets, lbs, lightnings;
 var weaponLevel = 0;
 var weaponMode = LIGHTNING;
-var fireRate = 200, lbfireRate=500, lightningfireRate=2000;
+var fireRate, lbfireRate, lightningfireRate;
 var nextFire = 0;
 var player_bullet_velocity = 750;
 var ultText, ultsign, ultsign_g;
@@ -75,7 +76,7 @@ var shield;
 var newX = 0;
 var newY = 0;
 
-// The following 2 variables is he property of SuperPlayer. (see function superPlayer() below)
+// The following 2 variables are the properties of SuperPlayer. (see function superPlayer() below)
 var playerSuperTime = 10000;
 var playerSuper = false;
 
@@ -99,6 +100,7 @@ function create() {
 	setupBullets();
 	setupLbs();
 	setupLightnings();
+	setupFireRate();
 	setupEnemys();
 	setupEnemyBullets();
 	setupPlayer(false);
@@ -182,6 +184,7 @@ function listenSocket(){
 			game.time.events.add(Phaser.Timer.SECOND * 10, fillult, this);
 			levelup_loop=game.time.events.loop(Phaser.Timer.SECOND * 25, difficultyUP, this);
 			state=INGAME;
+			setupFireRate();
 			gamestartMenu.kill();
 			setPlayerSpawnTimeUndead(); // game start
 		} else{
@@ -486,16 +489,17 @@ function playerHit(player, enemy) {
 	explode(enemy);
 	explode(player);
 	enemy.kill();
-	player.kill();
-	player.shield.kill();
 	game.time.events.remove(player.shield.loop);
 
 	var life = lives.getFirstAlive();
 	if (life !== null) {
 		life.kill();
 		socket.emit('vibrate', 'hit');
-		setupPlayer();
+		setPlayerSpawnTimeUndead();
+		player.reset(game.width / 2, game.height - 50);
 	} else {
+		player.kill();
+		player.shield.kill();
 		socket.emit('vibrate', 'die');
 		gameOver();
 	}
@@ -511,16 +515,17 @@ function playerHitByBullet(player, bullet) {
 	}
 	explode(player);
 	bullet.kill();
-	player.kill();
-	player.shield.kill();
 	game.time.events.remove(player.shield.loop);
 
 	var life = lives.getFirstAlive();
 	if (life !== null) {
 		life.kill();
 		socket.emit('vibrate', 'hit');
-		setupPlayer();
+		setPlayerSpawnTimeUndead();
+		player.reset(game.width / 2, game.height - 50);	
 	} else {
+		player.kill();
+		player.shield.kill();
 		socket.emit('vibrate', 'die');
 		gameOver();
 	}
@@ -707,6 +712,12 @@ function setupLightnings(){
 	lightnings.physicsBodyType = Phaser.Physics.ARCADE;
 	lightnings.createMultiple(20, 'lightning');
 	lightnings.setAll('anchor.x', 0.5);
+}
+
+function setupFireRate(){
+	fireRate = 200;
+	lbfireRate=500;
+	lightningfireRate=2000;
 }
 
 function setupEnemys(){
