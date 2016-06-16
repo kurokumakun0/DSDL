@@ -583,7 +583,7 @@ function playerHitByBullet(player, bullet) {
 function PlayerVsBox(player, box)	{
 	switch(box.type)	{
 		case yellow:
-			//FireBallSurround(player);
+			FireBallSurround(player);
 			weaponLevel--
 			break;
 		case orange:
@@ -601,8 +601,6 @@ function PlayerVsBox(player, box)	{
 		case chocolate:
 			break;
 		case blue:
-			weaponLevel--;
-			swap();
 			break;
 		case dark_blue:
 			break;
@@ -613,8 +611,6 @@ function PlayerVsBox(player, box)	{
 			break;
 	}
 	
-	FireBallSurround(player);
-
 	box.kill();
 	score += 50;
 	if( weaponLevel < MAX_WEAPON_LEVEL )
@@ -671,7 +667,6 @@ function swap(){
 function FireBallSurround(sprite){
 	fireballStartTime = game.time.now;
 	ballsSurrounded=true;
-	//console.log("in function");
 	if (fireballs.countDead() === 0) {
 		game.time.events.remove(fireballEvent1);
 		game.time.events.remove(fireballEvent2);
@@ -814,9 +809,6 @@ function setupFireBalls(){
 	fireballs.setAll('anchor.y', 0.5);
 	fireballs.setAll('scale.x', 0.8);
 	fireballs.setAll('scale.y', 0.8);
-	/*fireballs.forEach(function (fireball) {
-		fireball.animations.add('boom');
-	});*/
 }
 
 function setupEnemys(){
@@ -848,7 +840,6 @@ function setupEnemyBullets(){
 		enemyBullets[i].setAll('scale.x', 1.5);
 		enemyBullets[i].setAll('scale.y', 1.5);
 	}
-
 }
 
 function setupPlayerLives(){
@@ -880,7 +871,6 @@ function setupBoxes() {
 	boxes.setAll('outOfBoundsKill', true);
 	boxes.setAll('body.bounce.x', 1);
 	boxes.setAll('body.bounce.y', 1);
-
 }
 
 function setupExplosions() {
