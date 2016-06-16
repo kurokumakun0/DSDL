@@ -19,7 +19,7 @@ var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '
 var socket = io();
 
 function preload() {
-	game.load.image('gamestartMenu', '/assets/gamestart.png');
+	game.load.image('gamestartMenu', '/assets/menu.png');
 	game.load.image('sky', '/assets/seatiles.png');
 	game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');
 	game.load.image('ray', '/assets/ray.png');
@@ -976,7 +976,7 @@ function setupRocket()	{
  *	show debug message
  */
 function render() {
-
+	game.debug.body(player);
     game.debug.spriteInfo(player, 32, 32);
     // game.debug.text('angularVelocity: ' + sprite.body.angularVelocity, 32, 200);
     // game.debug.text('angularAcceleration: ' + sprite.body.angularAcceleration, 32, 232);
