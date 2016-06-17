@@ -9,10 +9,6 @@ var bodyParser = require('body-parser');
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
-// add Mongo db
-/*var mongoose = require('mongoose');
-mongoose.connect('mongodb://127.0.0.1/User');*/
-
 var highScore = require('./models/highScore.js');
 var firebaseDB = require('./firebase.js');
 
