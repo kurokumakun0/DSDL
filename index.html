@@ -18,14 +18,6 @@
 var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 var socket = io();
 
-/*MULTIPLAYER BUG AND TODO
-	change total_players
-	ultra no effect
-	score/lives for p2
-	event broken (search BROKEN IN MULTIPLAYER)
-	server restart to connect p1 again
-*/
-
 function preload() {
 	game.load.image('gamestartMenu', '/assets/menu.png');
 	game.load.image('sky', '/assets/seatiles.png');
@@ -83,16 +75,16 @@ var background;
 var background_movement = 1;
 
 //Player
-const MAX_LIFE = 3;
-var players = new Array();
-var total_players = 1;
-var lives;
+const MAX_LIFE = 3, MAX_FIREBALL = 3, MAX_ROCKETS = 20;
+const FIREBALL_TIME = 15, FIREBALL_RADIUS = 100;
+const ROCKET_COOLDOWN = 3000;
+var player, lives;
 var playerSpawnUndeadTime = 3000; // in milliseconds
 var playerSpawnUndead = false;	//whether player is undead
 var tweenPlayer; //the tween effects of player
 var shield;
-var newX = [0,0];
-var newY = [0,0];
+var newX = 0;
+var newY = 0;
 var rocketPool, rocket_velocity = 800;
 var fireballs;
 var Ball = new Array();
@@ -154,133 +146,94 @@ function update() {
 
 	updateText();
 
-	if(state===INGAME){
-		for( var j = 0 ; j < total_players ; j++ ) {
-			players[j].body.velocity.x = 10*(-newY[j]);
-			players[j].body.velocity.y = 10*(-newX[j]);
+	player.body.velocity.x = 10*(-newY);
+	player.body.velocity.y = 10*(-newX);
 
-			players[j].shield.position.x = players[j].position.x;
-			players[j].shield.position.y = players[j].position.y + players[j].height/2;;
+	player.shield.position.x = player.position.x;
+	player.shield.position.y = player.position.y + player.height/2;
 
-			if(DIFFICULTY_CHANGE===NOCHANGE){
-				spawn_enemy();
-				enemy_fire();
-				add_boxes();
-			}
+	if(state === INGAME && player.alive){
 
-			//player self group related
-			createRocket();
-			rotateRocket();
-
-			for( var i = 0 ; i < 4 ; i ++ ) {
-				if(weaponMode===BULLET) game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this);
-				else if(weaponMode===RAY) game.physics.arcade.overlap(rays, enemys[i], rayenemyHit, null, this);
-				else if(weaponMode===LIGHTNING){
-					game.physics.arcade.overlap(lightnings, enemys[i], lightningenemyHit, null, this);
-					for(var j = 0 ; j < 2;  j ++ )	{
-						game.physics.arcade.overlap(lightnings, enemyBullets[i], lightningBulletHit, null, this);
-					}
-				}
-				if(ballsSurrounded === true){
-					var par = (game.time.now-fireballStartTime)/1000*Math.PI;
-					//console.log(par);
-					for(var num = 0; num < 3; num++){
-						Ball[num].position.x = players[j].position.x+100*Math.sin(par+2*num/3*Math.PI);
-						Ball[num].position.y = players[j].position.y+100*Math.cos(par+2*num/3*Math.PI);
-					}
-					game.physics.arcade.overlap(fireballs, enemys[i], fireballenemyHit, null, this);
-				}
-				if( i != 0 )	// player(on sky) cannot touch enemys[0](on land)
-					game.physics.arcade.overlap(players[j], enemys[i], playerHit, null, this);
-
-				//rocket vs enemy
-				game.physics.arcade.overlap(rocketPool, enemys[i], enemyHit, null, this);
-			}
-			for( var i = 0 ; i < 2;  i ++ )	{
-				game.physics.arcade.overlap(players[j], enemyBullets[i], playerHitByBullet, null, this);
-			}
-			game.physics.arcade.overlap(players[j], boxes, PlayerVsBox, null, this);
+		if(DIFFICULTY_CHANGE === NOCHANGE){
+			spawn_enemy();
+			plane_attack();
+			add_boxes();
 		}
 
+		//player self group related
+		createRocket();
+		rotateRocket();
+
+		for(var i = 0 ; i < ENEMY_KINDS ; i ++ ){
+			if(weaponMode === BULLET) game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this); // Bullets vs Enemys
+			else if(weaponMode === RAY) game.physics.arcade.overlap(rays, enemys[i], rayenemyHit, null, this); // Rays vs Enemys
+			else if(weaponMode === LIGHTNING){
+				game.physics.arcade.overlap(lightnings, enemys[i], lightningenemyHit, null, this); // Lightnings vs Enemys
+				for(var j = 0; j < ENEMY_BULLET_KINDS; j++){ // Lightnings vs Enemy Bullets
+					game.physics.arcade.overlap(lightnings, enemyBullets[i], lightningBulletHit, null, this);
+				}
+			}
+			if(FireballsExist === true){ // Fireballs exist
+				var par = (game.time.now - fireballStartTime) / 1000 * Math.PI;
+				for(var j = 0; j < MAX_FIREBALL; j++){
+					Ball[j].position.x = player.position.x + FIREBALL_RADIUS * Math.sin(par + 2/MAX_FIREBALL * j * Math.PI);
+					Ball[j].position.y = player.position.y + FIREBALL_RADIUS * Math.cos(par + 2/MAX_FIREBALL * j * Math.PI);
+				}
+				game.physics.arcade.overlap(fireballs, enemys[i], fireballenemyHit, null, this); // Fireballs vs Enemys
+			}
+			if(i != FORT) // player(on sky) cannot touch forts(on land)
+				game.physics.arcade.overlap(player, enemys[i], playerHit, null, this); // Player vs Enemys
+			game.physics.arcade.overlap(rocketPool, enemys[i], enemyHit, null, this); // Rockets vs Enemys
+		}
+		for(var i = 0; i < ENEMY_BULLET_KINDS; i++){ // Player vs Enemy Bullets
+			game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
+		}
+		game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this); // Player vs Boxes
 	}
 }
 
 function listenSocket(){
-	//for( var i = 0 ; i < 2;  i++ )	{
-		socket.on('setX1', function(data) {
-			newX[0] = parseFloat(data);
-		});
-		socket.on('setY1', function(data) {
-			newY[0] = parseFloat(data);
-		});
-		socket.on('ultra1', function(data) {
-			if(players[0].alive)
-				launchult();
-		});
-		socket.on('start1', function(data) {
-			state=STARTGAME;
-			if( !(players[0].alive) )	{
-				setupPlayer(false);
-				weaponLevel=0;
-				score=0;
-				resetPlayerLives();
-				gameOverText.kill();
-			}
-			resetMenu();
-		});
-		socket.on('shoot1', function(data) {
-			if(state===STARTGAME){
-				game.time.events.add(Phaser.Timer.SECOND * 10, fillult, this);
-				levelup_loop=game.time.events.loop(Phaser.Timer.SECOND * 25, difficultyUP, this);
-				state=INGAME;
-				setupFireRate();
-				gamestartMenu.kill();
-				setPlayerSpawnTimeUndead(players[0]); // game start
-			} else{
-				fire(0);
-			}
-		});
-		socket.on('switch_weapon1', function(msg){
-			 weaponMode = msg;
-		});
-	//}
-		socket.on('setX2', function(data) {
-			newX[1] = parseFloat(data);
-		});
-		socket.on('setY2', function(data) {
-			newY[1] = parseFloat(data);
-		});
-		socket.on('ultra2', function(data) {
-			if(players[1].alive)
-				launchult();
-		});
-		socket.on('start2', function(data) {
-			state=STARTGAME;
-			if( !(players[1].alive) )	{
-				setupPlayer(false);
-				weaponLevel=0;
-				score=0;
-				resetPlayerLives();
-				gameOverText.kill();
-			}
-			resetMenu();
-		});
-		socket.on('shoot2', function(data) {
-			if(state===STARTGAME){
-				game.time.events.add(Phaser.Timer.SECOND * 10, fillult, this);
-				levelup_loop=game.time.events.loop(Phaser.Timer.SECOND * 25, difficultyUP, this);
-				state=INGAME;
-				setupFireRate();
-				gamestartMenu.kill();
-				setPlayerSpawnTimeUndead(players[1]); // game start
-			} else{
-				fire(1);
-			}
-		});
-		socket.on('switch_weapon2', function(msg){
-			 weaponMode = msg;
-		});
-
+	socket.on('setX', function(data) {
+		newX = parseFloat(data);
+	});
+	socket.on('setY', function(data) {
+		newY = parseFloat(data);
+	});
+	socket.on('ultra', function(data) {
+		if(player.alive)
+			launchult();
+	});
+	socket.on('start', function(data) {
+		state = STARTGAME;
+		if( !player.alive )	{
+			setupPlayer(false);
+			weaponLevel = 0;
+			score = 0;
+			resetPlayerLives();
+			gameOverText.kill();
+			scoreBoardText.kill();
+		}
+		resetMenu();
+	});
+	socket.on('shoot', function(data) {
+		if(state === STARTGAME){
+			game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
+			levelup_loop = game.time.events.loop(Phaser.Timer.SECOND * LEVELUP_TIME, difficultyUP, this);
+			state = INGAME;
+			setupFireRate();
+			gamestartMenu.kill();
+			setPlayerSpawnTimeUndead(); // game start
+		} else{
+			fire();
+		}
+	});
+	socket.on('switch_weapon', function(msg){
+		 weaponMode = msg;
+	});
+	socket.on('scoreBoard', function(data)	{
+		scoreBoardText = game.add.bitmapText(game.width/2, game.height/2 + 32, 'minecraftia', data);
+		scoreBoardText.anchor.setTo(0.5, 0.5);
+	});
 }
 
 function updateText(){
@@ -305,47 +258,46 @@ function difficultyTextDel(){
 	difficultyText.kill();
 }
 
-function fire(j) {
-	if(weaponMode===BULLET){
-		if (players[j].alive && game.time.now > nextFire && bullets.countDead() > 0){
+function fire() {
+	if(weaponMode === BULLET){
+		if (player.alive && game.time.now > nextFire && bullets.countDead() > 0){
 			if (this.bullets.countDead() < weaponLevel * 2) {
 				return;
 			}
 			nextFire = game.time.now + fireRate;
 			var bullet = bullets.getFirstDead();
-			bullet.reset(players[j].x , players[j].y - 10);
+			bullet.reset(player.x , player.y - 10);
 			bullet.body.velocity.y = -player_bullet_velocity;
 
 			for (var i = 1; i <= weaponLevel; i++) {
 				bullet = bullets.getFirstExists(false);
-				bullet.reset(players[j].x - i * 6, players[j].y - 10); // spawn left bullet slightly left off center
+				bullet.reset(player.x - i * 6, player.y - 10); // spawn left bullet slightly left off center
 				game.physics.arcade.velocityFromAngle(
 					-95 - i * 10, player_bullet_velocity, bullet.body.velocity
 				); // the left bullets spread from -95 degrees to -135 degrees
 
 				bullet = bullets.getFirstExists(false);
-				bullet.reset(players[j].x + i * 6, players[j].y - 10); // spawn right bullet slightly right off center
+				bullet.reset(player.x + i * 6, player.y - 10); // spawn right bullet slightly right off center
 				game.physics.arcade.velocityFromAngle(
 					-85 + i * 10, player_bullet_velocity, bullet.body.velocity
 				); // the right bullets spread from -85 degrees to -45
 			}
 		}
 	}
-	else if(weaponMode===RAY){
-		if (players[j].alive && game.time.now > nextFire && rays.countDead() > 0){
+	else if(weaponMode === RAY){
+		if (player.alive && game.time.now > nextFire && rays.countDead() > 0){
 			nextFire = game.time.now + rayfireRate;
 			var ray = rays.getFirstDead();
-			ray.reset(players[j].x , players[j].y - 10);
+			ray.reset(player.x , player.y - 10);
 			ray.body.velocity.y = -player_bullet_velocity*5;
 			ray.scale.setTo(1+0.5*weaponLevel,1);
 		}
 	}
-
-	else if(weaponMode===LIGHTNING){
-		if (players[j].alive && game.time.now > nextFire && lightnings.countDead() > 0){
+	else if(weaponMode === LIGHTNING){
+		if (player.alive && game.time.now > nextFire && lightnings.countDead() > 0){
 			nextFire = game.time.now + lightningfireRate;
 			var lightning = lightnings.getFirstDead();
-			lightning.reset(players[j].x , 0);
+			lightning.reset(player.x , 0);
 			lightning.scale.setTo(1, 3);
 			lightning.animations.add('lightning', [0,1,2,3,4,5], 6, true);
 			lightning.play('lightning', 15, true, false);
@@ -514,7 +466,7 @@ function plane_attack() {
 			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(2000, 5000);
 			var enemy_bullet = enemyBullets[PLANE_MEDIUM_BULLET].getFirstDead();
 			enemy_bullet.reset(enemy.x, enemy.y + enemy.height/2);
-			game.physics.arcade.moveToObject(enemy_bullet, players[0], enemy_bullet_velocity2);
+			game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity[PLANE_MEDIUM]);
 		}
 	}, this);
 
@@ -524,32 +476,31 @@ function plane_attack() {
 			for( var i = 0 ; i < PLANE_LARGE_BULLET_NUM; i ++ )	{
 				var enemy_bullet = enemyBullets[PLANE_LARGE_BULLET].getFirstDead();
 				enemy_bullet.reset(enemy.x + 50, enemy.y + enemy.height/2 - i*30);
-				game.physics.arcade.moveToObject(enemy_bullet, players[0], enemy_bullet_velocity3);
-				enemy_bullet = enemyBullets[1].getFirstDead();
+				game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity[PLANE_LARGE]);
+				enemy_bullet = enemyBullets[PLANE_LARGE_BULLET].getFirstDead();
 				enemy_bullet.reset(enemy.x - 50, enemy.y + enemy.height/2 - i*30);
-				game.physics.arcade.moveToObject(enemy_bullet, players[0], enemy_bullet_velocity3);
+				game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity[PLANE_LARGE]);
 			}
 		}
 	}, this);
 }
 
 function createRocket()	{
-	for(var j = 0 ; j < total_players ; j ++ ){
-		if (game.time.now > players[j].nextRocket && rocketPool.countDead() > 0){
-			players[j].nextRocket = game.time.now + 3000;
-			for( var i = 0 ; i < 1 ; i ++ )	{
-				var rocket = rocketPool.getFirstDead();
-				rocket.reset(players[j].x + 50, players[j].y + players[j].height/2 + i*30);
-				rocket.target = enemys[game.rnd.integerInRange(0, 3)].getFirstAlive();
-				rocket.angle = 5 + i*20;
-				game.physics.arcade.velocityFromAngle( -95 - i*20, rocket_velocity, rocket.body.velocity);
 
-				rocket = rocketPool.getFirstDead();
-				rocket.reset(players[j].x - 50, players[j].y + players[j].height/2 + i*30);
-				rocket.target = enemys[game.rnd.integerInRange(0, 3)].getFirstAlive();
-				rocket.angle = -5 + i*20;
-				game.physics.arcade.velocityFromAngle( -85 + i*20, rocket_velocity, rocket.body.velocity);
-			}
+	if (game.time.now > player.nextRocket && rocketPool.countDead() > 0){
+		player.nextRocket = game.time.now + ROCKET_COOLDOWN;
+		for( var i = 0 ; i <= weaponLevel/2 ; i ++ )	{
+			var rocket = rocketPool.getFirstDead();
+			rocket.reset(player.x + 50, player.y + player.height/2 );
+			rocket.target = enemys[game.rnd.integerInRange(0, 3)].getFirstAlive();
+			rocket.angle = 5 + i*20;
+			game.physics.arcade.velocityFromAngle( -95 - i*20, rocket_velocity + 25*weaponLevel, rocket.body.velocity);
+
+			rocket = rocketPool.getFirstDead();
+			rocket.reset(player.x - 50, player.y + player.height/2 );
+			rocket.target = enemys[game.rnd.integerInRange(0, 3)].getFirstAlive();
+			rocket.angle = -5 - i*20;
+			game.physics.arcade.velocityFromAngle( -85 + i*20, rocket_velocity + 25*weaponLevel, rocket.body.velocity);
 		}
 	}
 }
@@ -621,7 +572,7 @@ function playerHit(player, enemy) {
 	if (life !== null) {
 		life.kill();
 		socket.emit('vibrate', 'hit');
-		setPlayerSpawnTimeUndead(player);
+		setPlayerSpawnTimeUndead();
 		player.reset(game.width / 2, game.height - 50);
 	} else {
 		player.kill();
@@ -651,7 +602,7 @@ function playerHitByBullet(player, bullet) {
 	if (life !== null) {
 		life.kill();
 		socket.emit('vibrate', 'hit');
-		setPlayerSpawnTimeUndead(player);
+		setPlayerSpawnTimeUndead();
 		player.reset(game.width / 2, game.height - 50);
 	} else {
 		player.kill();
@@ -691,7 +642,7 @@ function PlayerVsBox(player, box)	{
 		case gray:
 			break;
 		case colorful:
-			superPlayer(player);
+			superPlayer();
 			break;
 	}
 
@@ -709,7 +660,7 @@ function heal()	{
 	}
 }
 
-function superPlayer(player){
+function superPlayer(){
 // When got a colorful box, the player can become undead and kill the enemies (except turrets) with bumping
 	var tint = player.tint;
 	player.alpha = 1;
@@ -810,53 +761,43 @@ function setupPlayer(isSetSpawnTimeUndead){
 
 	isSetSpawnTimeUndead = typeof isSetSpawnTimeUndead !== 'undefined' ? isSetSpawnTimeUndead : true;
 
-	for(var i = 0 ; i < total_players ; i++ ){		
-		players[i] = game.add.sprite(game.width / (total_players+1) * (i+1), game.height - 50, 'player');
-		game.physics.arcade.enable(players[i]);
-		players[i].body.collideWorldBounds = true;
-		players[i].anchor.x = 0.5;
-		players[i].anchor.y = 0.5;
+	player = game.add.sprite(game.width / 2, game.height - 50, 'player');
+	game.physics.arcade.enable(player);
+	player.body.collideWorldBounds = true;
+	player.anchor.x = 0.5;
+	player.anchor.y = 0.5;
 
-		players[i].scale.setTo(1.5, 1.5);
+	player.scale.setTo(1.5, 1.5);
 
-		// shield
-		players[i].shield = game.add.sprite(players[i].x, players[i].y, 'shield');
-		game.physics.arcade.enable(players[i].shield);
-		players[i].shield.anchor.x = 0.5;
-		players[i].shield.anchor.y = 0.5;
-		players[i].shield.animations.add('effect', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], 20, true);
-		players[i].shield.animations.play('effect');
-//BROKEN IN MULTIPLAYER
-		//players[i].shield.loop = game.time.events.loop(Phaser.Timer.SECOND * 3, playEffect(players[i]), this);
+	// shield
+	player.shield = game.add.sprite(player.x, player.y, 'shield');
+	game.physics.arcade.enable(player.shield);
+	player.shield.anchor.x = 0.5;
+	player.shield.anchor.y = 0.5;
+	player.shield.animations.add('effect', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], 20, true);
+	player.shield.animations.play('effect');
+	player.shield.loop = game.time.events.loop(Phaser.Timer.SECOND * 3, function()	{
+		player.shield.animations.play('effect');
+	}, this);
 
-		// Rocket related
-		players[i].nextRocket = 0;
+	player.nextRocket = 0; 	// Rocket related
 
-		//player.addChild(shield);
-		
-		players[i].alpha = 1;
+	//player.addChild(shield);
 
-		if (isSetSpawnTimeUndead === true){
-			setPlayerSpawnTimeUndead(players[i]);
-		}
-	}
+	if (isSetSpawnTimeUndead === true)
+		setPlayerSpawnTimeUndead();
 }
 
-//function playEffect(player) {player.shield.animations.play('effect');}
-
-function setPlayerSpawnTimeUndead(player){
+function setPlayerSpawnTimeUndead(){
 	player.alpha = 1;
 	playerSpawnUndead = true;
 	tweenPlayer = game.add.tween(player).to( { alpha: 0.5 }, 200, Phaser.Easing.Linear.None, true, 0, playerSpawnUndeadTime / (200 * 2), true);
-	//BROKEN IN MULTIPLAYER
-	//game.time.events.add(playerSpawnUndeadTime, playerSpawnUndeadTimeEvent(player), this);
+	game.time.events.add(playerSpawnUndeadTime, function(){
+		player.alpha = 1;
+		tweenPlayer.stop();
+		playerSpawnUndead = false;
+	}, this);
 }
-
-/*function playerSpawnUndeadTimeEvent(player){
-	player.alpha = 1;
-	tweenPlayer.stop();
-	playerSpawnUndead = false;
-}*/
 
 function setupBullets(){
 	bullets = game.add.group();
@@ -1013,18 +954,6 @@ function setupRocket()	{
 	 });
 }
 
-/*
- *	show debug message
- */
-function render() {
-	//game.debug.body(player);
-    //game.debug.spriteInfo(player, 32, 32);
-    // game.debug.text('angularVelocity: ' + sprite.body.angularVelocity, 32, 200);
-    // game.debug.text('angularAcceleration: ' + sprite.body.angularAcceleration, 32, 232);
-    // game.debug.text('angularDrag: ' + sprite.body.angularDrag, 32, 264);
-    // game.debug.text('deltaZ: ' + sprite.body.deltaZ(), 32, 296);
-
-}
 </script>
 </body>
 </html>
