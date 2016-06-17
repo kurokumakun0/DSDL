@@ -21,9 +21,20 @@ io.on('connection', function(socket){
   io.emit('connectOK', 'OK');
   socket.on('disconnect', function(){
     console.log('user disconnected');
+	player1status = false;
+	player2status = false;
+	io.emit(player1uuid, 'checkConnect');
+	io.emit(player2uuid, 'checkConnect');
   });
   
   //=====Android to Web
+  socket.on('message', function(msg){
+	if(msg == 'fire'){
+		io.emit('shoot', msg);
+	}else if(msg == 'start'){
+		io.emit('start', msg);
+	}
+  });
   socket.on('message1', function(msg){
 	if(msg == 'fire'){
 		io.emit('shoot1', msg);
@@ -38,6 +49,12 @@ io.on('connection', function(socket){
 		io.emit('start2', msg);
 	}
   });
+  socket.on('X', function(msg){
+	   io.emit('setX', msg);
+  });
+  socket.on('Y', function(msg){
+	   io.emit('setY', msg);
+  });
   socket.on('X1', function(msg){
 	   io.emit('setX1', msg);
   });
@@ -50,23 +67,22 @@ io.on('connection', function(socket){
   socket.on('Y2', function(msg){
 	   io.emit('setY2', msg);
   });
-  socket.on('ultra1', function(msg){
+  socket.on('ultra', function(msg){
 	   if(msg == 'start') io.emit('start', msg);
-	    else io.emit('ultra1', msg);
+	    else io.emit('ultra', msg);
   });
-  socket.on('switch_weapon1', function(msg){
-	   io.emit('switch_weapon1', msg);
-  });
-  socket.on('ultra2', function(msg){
-	   if(msg == 'start') io.emit('start', msg);
-	    else io.emit('ultra2', msg);
-  });
-  socket.on('switch_weapon2', function(msg){
-	   io.emit('switch_weapon2', msg);
+  socket.on('switch_weapon', function(msg){
+	   io.emit('switch_weapon', msg);
   });
   //=====
   
   //=====Web to Android
+  socket.on('vibrate', function(msg){
+	   io.emit('connectOK', msg);
+  });
+  socket.on('ULT', function(msg){
+	   io.emit('connectOK', msg);
+  });
   socket.on('vibrate1', function(msg){
 	   io.emit(player1uuid, msg);
   });
@@ -88,12 +104,26 @@ io.on('connection', function(socket){
 		player1status = true;
 		player1uuid = msg;
 		io.emit(player1uuid, 'player1');
+		//server to web
+		io.emit('players', '2');
 	}else if(!player2status){
 		player2status = true;
 		player2uuid = msg;
 		io.emit(player2uuid, 'player2');
+		io.emit(player1uuid, 'ready');
+		io.emit(player2uuid, 'ready');
+		//server to web
+		io.emit('players', 'go');
 	}else{
 		io.emit(msg, 'full');
+	}
+  });
+  socket.on('stillConnect', function(msg){
+	if(msg == player1uuid){
+		player1status = true;
+	}
+	if(msg == player2uuid){
+		player2status = true;
 	}
   });
   //=====
