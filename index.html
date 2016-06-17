@@ -2,7 +2,7 @@
 <html>
 <head>
 	<meta charset="UTF-8" />
-    <title>Sync</title>
+    <title>Sync Shooter</title>
 	<script type="text/javascript" src="https://cdn.jsdelivr.net/phaser/2.4.8/phaser.min.js"></script>
     <style type="text/css">
         body {
@@ -17,13 +17,15 @@
 
 var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '', { preload: preload, create: create, update: update });
 var socket = io();
+var multiplePlayer = false;
+var multiReady = false;
 
 function preload() {
 	game.load.image('gamestartMenu', '/assets/menu.png');
 	game.load.image('sky', '/assets/seatiles.png');
-	game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');
-	game.load.image('ray', '/assets/ray.png');
-	game.load.image('player', '/assets/THSR.png');
+	game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');game.load.image('bullet2', '/assets/shump_assets/player_bullet_1.png');
+	game.load.image('ray', '/assets/ray.png');game.load.image('ray2', '/assets/ray.png');
+	game.load.image('player', '/assets/THSR.png');	game.load.image('player2', '/assets/THSR.png');
 	game.load.image('enemy1', '/assets/EMU800.png');
 	game.load.image('enemy2', '/assets/EMU700.png');
 	game.load.image('enemy3', '/assets/shump_assets/mob_flagship_1.png');
@@ -36,8 +38,8 @@ function preload() {
 	game.load.spritesheet('bonus_cube', 'assets/shump_assets/cubes.png', 24, 24);
 	game.load.spritesheet('enemy0', '/assets/shump_assets/mob_turret_1.png', 24, 24);
 	game.load.spritesheet('explosion', 'assets/shump_assets/explosion_1.png', 32, 32);
-	game.load.spritesheet('shield', 'assets/magic.png', 192, 192);
-	game.load.spritesheet('lightning', 'assets/lightning.png', 55, 208);
+	game.load.spritesheet('shield', 'assets/magic.png', 192, 192);	game.load.spritesheet('shield2', 'assets/magic.png', 192, 192);
+	game.load.spritesheet('lightning', 'assets/lightning.png', 55, 208);game.load.spritesheet('lightning2', 'assets/lightning.png', 55, 208);
 	game.load.spritesheet('rocket', 'assets/arrows.png', 48, 48);
 	game.load.spritesheet('fireball', '/assets/fireball.png', 32, 30);
 	this.load.bitmapFont('minecraftia', '/assets/shump_assets/minecraftia.png', '/assets/shump_assets/minecraftia.xml');
@@ -47,12 +49,12 @@ function preload() {
 const BULLET = 0, RAY = 1, LIGHTNING = 2, MAX_WEAPON_LEVEL = 4;
 const EMPTY = 0, FILLED = 1; //ULT state
 const ULT_FILL_TIME = 10, ULT_DAMAGE = 100;
-var bullets, rays, lightnings;
-var weaponLevel = 0;
-var weaponMode = game.rnd.integerInRange(BULLET,LIGHTNING);
+var bullets, bullets2, rays, rays2, lightnings, lightnings2;
+var weaponLevel = 0, weaponLevel2 = 0;
+var weaponMode = game.rnd.integerInRange(BULLET,LIGHTNING), weaponMode2 = game.rnd.integerInRange(BULLET,LIGHTNING);
 var weapon_num = [500, 20, 10];
-var fireRate, rayfireRate, lightningfireRate;
-var nextFire = 0;
+var fireRate, rayfireRate, lightningfireRate, fireRate2, rayfireRate2, lightningfireRate2;
+var nextFire = 0, nextFire2 = 0;
 var player_bullet_velocity = 750;
 var ultText, ultsign, ultsign_g;
 var ult = EMPTY;
@@ -66,8 +68,8 @@ var DIFFICULTY = 1;
 var DIFFICULTY_CHANGE=NOCHANGE;
 var difficultyText;
 var levelup_loop;
-var score = 0;
-var scoreText;
+var score = 0, score2 = 0;
+var scoreText, scoreText2;
 var scoreBoardText;
 var gamestartMenu;
 var gameOverText;
@@ -79,23 +81,23 @@ var background_movement = 1;
 const MAX_LIFE = 3, MAX_FIREBALL = 3, MAX_ROCKETS = 20;
 const FIREBALL_TIME = 15, FIREBALL_RADIUS = 100;
 const ROCKET_COOLDOWN = 3000;
-var player, lives;
+var player, lives, player2, lives2;
 var playerSpawnUndeadTime = 3000; // in milliseconds
-var playerSpawnUndead = false;	//whether player is undead
-var tweenPlayer; //the tween effects of player
+var playerSpawnUndead = false, playerSpawnUndead2 = false;	//whether player is undead
+var tweenPlayer, tweenPlayer2; //the tween effects of player
 var shield;
-var newX = 0;
-var newY = 0;
+var newX = 0, newX2 = 0;
+var newY = 0, newY2 = 0;
 var rocketPool, rocket_velocity = 800;
 var fireballs;
-var Ball = new Array();
-var fireballEvent = new Array();
+var Ball = new Array(), Ball2 = new Array();
+var fireballEvent = new Array(), fireballEvent2 = new Array();
 var fireballStartTime;
-var FireballsExist = false;
+var FireballsExist = false, FireballsExist2 = false;
 
 // The following 2 variables are the properties of SuperPlayer. (see function superPlayer() below)
 var playerSuperTime = 10000;
-var playerSuper = false;
+var playerSuper = false, playerSuper2 = false;
 
 //ENEMY
 const ENEMY_KINDS = 4, ENEMY_BULLET_KINDS = 2;
@@ -154,11 +156,18 @@ function update() {
 
 	player.body.velocity.x = 10*(-newY);
 	player.body.velocity.y = 10*(-newX);
-
 	player.shield.position.x = player.position.x;
 	player.shield.position.y = player.position.y + player.height/2;
-
-	if(state === INGAME && player.alive){
+	//======
+	if(multiplePlayer){
+		player2.body.velocity.x = 10*(-newY2);
+		player2.body.velocity.y = 10*(-newX2);
+		player2.shield.position.x = player2.position.x;
+		player2.shield.position.y = player2.position.y + player2.height/2;
+	}
+	//=====
+	
+	if(state === INGAME && player.alive && !multiplePlayer){
 
 		if(DIFFICULTY_CHANGE === NOCHANGE){
 			spawn_enemy();
@@ -196,6 +205,61 @@ function update() {
 		}
 		game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this); // Player vs Boxes
 	}
+	//==================multiplePlayer=================================================================================================
+	if(state === INGAME && (player.alive || player2.alive) && multiplePlayer){
+		if(DIFFICULTY_CHANGE === NOCHANGE){
+			spawn_enemy();
+			plane_attack();
+			add_boxes();
+		}
+
+		for(var i = 0 ; i < ENEMY_KINDS ; i ++ ){
+			if(weaponMode === BULLET) game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this); // Bullets vs Enemys
+			else if(weaponMode === RAY) game.physics.arcade.overlap(rays, enemys[i], rayenemyHit, null, this); // Rays vs Enemys
+			else if(weaponMode === LIGHTNING){
+				game.physics.arcade.overlap(lightnings, enemys[i], lightningenemyHit, null, this); // Lightnings vs Enemys
+				for(var j = 0; j < ENEMY_BULLET_KINDS; j++){ // Lightnings vs Enemy Bullets
+					game.physics.arcade.overlap(lightnings, enemyBullets[i], lightningBulletHit, null, this);
+				}
+			}
+			if(weaponMode2 === BULLET) game.physics.arcade.overlap(bullets2, enemys[i], enemyHit2, null, this); // Bullets vs Enemys
+			else if(weaponMode2 === RAY) game.physics.arcade.overlap(rays2, enemys[i], rayenemyHit2, null, this); // Rays vs Enemys
+			else if(weaponMode2 === LIGHTNING){
+				game.physics.arcade.overlap(lightnings2, enemys[i], lightningenemyHit2, null, this); // Lightnings vs Enemys
+				for(var j = 0; j < ENEMY_BULLET_KINDS; j++){ // Lightnings vs Enemy Bullets
+					game.physics.arcade.overlap(lightnings2, enemyBullets[i], lightningBulletHit2, null, this);
+				}
+			}
+			if(FireballsExist === true){ // Fireballs exist
+				var par = (game.time.now - fireballStartTime) / 1000 * Math.PI;
+				for(var j = 0; j < MAX_FIREBALL; j++){
+					Ball[j].position.x = player.position.x + FIREBALL_RADIUS * Math.sin(par + 2/MAX_FIREBALL * j * Math.PI);
+					Ball[j].position.y = player.position.y + FIREBALL_RADIUS * Math.cos(par + 2/MAX_FIREBALL * j * Math.PI);
+				}
+				game.physics.arcade.overlap(fireballs, enemys[i], fireballenemyHit, null, this); // Fireballs vs Enemys
+			}
+			if(FireballsExist2 === true){ // Fireballs exist
+				var par = (game.time.now - fireballStartTime) / 1000 * Math.PI;
+				for(var j = 0; j < MAX_FIREBALL; j++){
+					Ball2[j].position.x = player2.position.x + FIREBALL_RADIUS * Math.sin(par + 2/MAX_FIREBALL * j * Math.PI);
+					Ball2[j].position.y = player2.position.y + FIREBALL_RADIUS * Math.cos(par + 2/MAX_FIREBALL * j * Math.PI);
+				}
+				game.physics.arcade.overlap(fireballs, enemys[i], fireballenemyHit, null, this); // Fireballs vs Enemys
+			}
+			if(i != FORT){ // player(on sky) cannot touch forts(on land)
+				game.physics.arcade.overlap(player, enemys[i], playerHit, null, this); // Player vs Enemys
+				game.physics.arcade.overlap(player2, enemys[i], playerHit2, null, this); // Player2 vs Enemys
+			}
+			//game.physics.arcade.overlap(rocketPool, enemys[i], enemyHit, null, this); // Rockets vs Enemys
+		}
+		for(var i = 0; i < ENEMY_BULLET_KINDS; i++){ // Player vs Enemy Bullets
+			game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
+			game.physics.arcade.overlap(player2, enemyBullets[i], playerHitByBullet2, null, this);
+		}
+		game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this); // Player vs Boxes
+		game.physics.arcade.overlap(player2, boxes, PlayerVsBox2, null, this); // Player2 vs Boxes
+	}
+	//===================================================================================================================================
 }
 
 function listenSocket(){
@@ -241,11 +305,89 @@ function listenSocket(){
 		scoreBoardText = game.add.bitmapText(game.width/2, game.height/2 + 32, 'minecraftia', data);
 		scoreBoardText.anchor.setTo(0.5, 0.5);
 	});
+	//==========multiplePlayer==================================
+	socket.on('players', function(msg) {
+		if(msg == '2'){
+			multiplePlayer = true;
+			ultsign_g.kill();
+			ultText.kill();
+			scoreText.text = 'P1 score: 0'
+			scoreText2 = game.add.text(16, 50, 'P2 score: 0', { fontSize: '20px', fill: '#000' });
+			player.reset(game.width / 3, game.height - 50);
+			setupPlayer2(false);
+			setupPlayerLives2();
+			setupBullets2();
+			weaponMode = BULLET, weaponMode2 = BULLET;
+		}
+		if(msg == 'go'){
+			multiReady = true;
+		}
+	});
+	socket.on('setX1', function(data) {
+		newX = parseFloat(data);
+	});
+	socket.on('setY1', function(data) {
+		newY = parseFloat(data);
+	});
+	socket.on('setX2', function(data) {
+		newX2 = parseFloat(data);
+	});
+	socket.on('setY2', function(data) {
+		newY2 = parseFloat(data);
+	});
+	socket.on('start1', function(data) {
+		state = STARTGAME;
+		if(player1Die && player2Die){
+			resetMenu();
+			player1Die = false;
+			player2Die = false;
+		}
+	});
+	socket.on('shoot1', function(data) {
+		if(state === STARTGAME && multiReady){
+			game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
+			levelup_loop = game.time.events.loop(Phaser.Timer.SECOND * LEVELUP_TIME, difficultyUP, this);
+			state = INGAME;
+			setupFireRate();
+			gamestartMenu.kill();
+			setPlayerSpawnTimeUndead();
+			setPlayerSpawnTimeUndead2();// game start
+		} else{
+			fire();
+		}
+	});
+	socket.on('start2', function(data) {
+		state = STARTGAME;
+		if(player1Die && player2Die){
+			resetMenu();
+			player1Die = false;
+			player2Die = false;
+		}
+	});
+	socket.on('shoot2', function(data) {
+		if(state === STARTGAME && multiReady){
+			game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
+			levelup_loop = game.time.events.loop(Phaser.Timer.SECOND * LEVELUP_TIME, difficultyUP, this);
+			state = INGAME;
+			setupFireRate();
+			gamestartMenu.kill();
+			setPlayerSpawnTimeUndead();
+			setPlayerSpawnTimeUndead2();// game start
+		} else{
+			fire2();
+		}
+	});
+	//=================================================================
 }
 
 function updateText(){
-	scoreText.text = 'Score: ' + score;
-	ultText.text = 'ULT state: ' + ultstate[ult];
+	if(multiplePlayer){
+		scoreText.text = 'P1 score: ' + score;
+		scoreText2.text = 'P2 score: ' + score2;
+	}else{
+		scoreText.text = 'Score: ' + score;
+		ultText.text = 'ULT state: ' + ultstate[ult];
+	}
 }
 
 function difficultyUP(){
@@ -312,6 +454,56 @@ function fire() {
 		}
 	}
 }
+
+//===========multiplePlayer==========
+function fire2() {
+	if(weaponMode2 === BULLET){
+		if (player2.alive && game.time.now > nextFire2 && bullets2.countDead() > 0){
+			if (this.bullets2.countDead() < weaponLevel2 * 2) {
+				return;
+			}
+			nextFire2 = game.time.now + fireRate2;
+			var bullet = bullets2.getFirstDead();
+			bullet.reset(player2.x , player2.y - 10);
+			bullet.body.velocity.y = -player_bullet_velocity;
+
+			for (var i = 1; i <= weaponLevel2; i++) {
+				bullet = bullets2.getFirstExists(false);
+				bullet.reset(player2.x - i * 6, player2.y - 10); // spawn left bullet slightly left off center
+				game.physics.arcade.velocityFromAngle(
+					-95 - i * 10, player_bullet_velocity, bullet.body.velocity
+				); // the left bullets spread from -95 degrees to -135 degrees
+
+				bullet = bullets2.getFirstExists(false);
+				bullet.reset(player2.x + i * 6, player2.y - 10); // spawn right bullet slightly right off center
+				game.physics.arcade.velocityFromAngle(
+					-85 + i * 10, player_bullet_velocity, bullet.body.velocity
+				); // the right bullets spread from -85 degrees to -45
+			}
+		}
+	}
+	else if(weaponMode2 === RAY){
+		if (player2.alive && game.time.now > nextFire2 && rays2.countDead() > 0){
+			nextFire2 = game.time.now + rayfireRate2;
+			var ray = rays2.getFirstDead();
+			ray.reset(player2.x , player2.y - 10);
+			ray.body.velocity.y = -player_bullet_velocity*5;
+			ray.scale.setTo(1+0.5*weaponLevel2,1);
+		}
+	}
+	else if(weaponMode2 === LIGHTNING){
+		if (player2.alive && game.time.now > nextFire2 && lightnings2.countDead() > 0){
+			nextFire2 = game.time.now + lightningfireRate2;
+			var lightning = lightnings2.getFirstDead();
+			lightning.reset(player2.x , 0);
+			lightning.scale.setTo(1, 3);
+			lightning.animations.add('lightning', [0,1,2,3,4,5], 6, true);
+			lightning.play('lightning', 15, true, false);
+			game.time.events.add(Phaser.Timer.SECOND * (6+weaponLevel2), fadeLightning, this, lightning);
+		}
+	}
+}
+//=================================
 
 function fillult(){
 	ult = FILLED;
@@ -385,9 +577,20 @@ function resetFireballs(){
 	FireballsExist = false;
 }
 
-function spawn_enemy() {
+//===========
+function resetFireballs2(){
+	for(var i = 0; i < MAX_FIREBALL; i ++){
+		game.time.events.remove(fireballEvent[i]);
+		Ball2[i].kill();
+	}
+	FireballsExist2 = false;
+}
+//===========
 
-	if( !player.alive )
+function spawn_enemy() {
+	if( !player.alive && !multiplePlayer)
+		return;
+	if( multiplePlayer && !player.alive && !player2.alive)
 		return;
 
 	if (game.time.now > nextEnemy[FORT] && enemys[FORT].countDead() > 0){ // Spawn forts
@@ -455,8 +658,9 @@ function fort_attack(enemy)	{
 }
 
 function plane_attack() {
-
-	if( !player.alive )
+	if( !player.alive && !multiplePlayer)
+		return;
+	if( multiplePlayer && !player.alive && !player2.alive)
 		return;
 
 	enemys[PLANE_SMALL].forEachAlive(function (enemy) {
@@ -473,20 +677,39 @@ function plane_attack() {
 			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(2000, 5000);
 			var enemy_bullet = enemyBullets[PLANE_MEDIUM_BULLET].getFirstDead();
 			enemy_bullet.reset(enemy.x, enemy.y + enemy.height/2);
-			game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity[PLANE_MEDIUM]);
+			if(multiplePlayer){
+				if(game.rnd.integerInRange(1, 100) > 50){
+					game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity[PLANE_MEDIUM]);
+				}else{
+					game.physics.arcade.moveToObject(enemy_bullet, player2, enemy_bullet_velocity[PLANE_MEDIUM]);
+				}
+			}else{
+				game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity[PLANE_MEDIUM]);
+			}
 		}
 	}, this);
 
 	enemys[PLANE_LARGE].forEachAlive(function (enemy) {
 		if (game.time.now > enemy.enemyNextFire && enemyBullets[PLANE_LARGE_BULLET].countDead() > 0){
 			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(5000, 6000);
-			for( var i = 0 ; i < PLANE_LARGE_BULLET_NUM; i ++ )	{
-				var enemy_bullet = enemyBullets[PLANE_LARGE_BULLET].getFirstDead();
-				enemy_bullet.reset(enemy.x + 50, enemy.y + enemy.height/2 - i*30);
-				game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity[PLANE_LARGE]);
-				enemy_bullet = enemyBullets[PLANE_LARGE_BULLET].getFirstDead();
-				enemy_bullet.reset(enemy.x - 50, enemy.y + enemy.height/2 - i*30);
-				game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity[PLANE_LARGE]);
+			if(multiplePlayer){
+				for( var i = 0 ; i < PLANE_LARGE_BULLET_NUM; i ++ )	{
+					var enemy_bullet = enemyBullets[PLANE_LARGE_BULLET].getFirstDead();
+					enemy_bullet.reset(enemy.x + 50, enemy.y + enemy.height/2 - i*30);
+					game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity[PLANE_LARGE]);
+					enemy_bullet = enemyBullets[PLANE_LARGE_BULLET].getFirstDead();
+					enemy_bullet.reset(enemy.x - 50, enemy.y + enemy.height/2 - i*30);
+					game.physics.arcade.moveToObject(enemy_bullet, player2, enemy_bullet_velocity[PLANE_LARGE]);
+				}
+			}else{
+				for( var i = 0 ; i < PLANE_LARGE_BULLET_NUM; i ++ )	{
+					var enemy_bullet = enemyBullets[PLANE_LARGE_BULLET].getFirstDead();
+					enemy_bullet.reset(enemy.x + 50, enemy.y + enemy.height/2 - i*30);
+					game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity[PLANE_LARGE]);
+					enemy_bullet = enemyBullets[PLANE_LARGE_BULLET].getFirstDead();
+					enemy_bullet.reset(enemy.x - 50, enemy.y + enemy.height/2 - i*30);
+					game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity[PLANE_LARGE]);
+				}
 			}
 		}
 	}, this);
@@ -578,7 +801,11 @@ function playerHit(player, enemy) {
 	var life = lives.getFirstAlive();
 	if (life !== null) {
 		life.kill();
-		socket.emit('vibrate', 'hit');
+		if(multiplePlayer){
+			socket.emit('vibrate1', 'hit');
+		}else{
+			socket.emit('vibrate', 'hit');
+		}
 		setPlayerSpawnTimeUndead();
 		player.reset(game.width / 2, game.height - 50);
 	} else {
@@ -586,10 +813,14 @@ function playerHit(player, enemy) {
 		player.shield.kill();
 		if(FireballsExist === true)
 			resetFireballs();
-		socket.emit('vibrate', 'die');
-		gameOver();
-		// clear all
-		launchult();
+		if(multiplePlayer){
+			socket.emit('vibrate1', 'die');
+			gameOver1();
+		}else{
+			socket.emit('vibrate', 'die');
+			gameOver();
+			launchult();
+		}
 	}
 }
 
@@ -608,7 +839,11 @@ function playerHitByBullet(player, bullet) {
 	var life = lives.getFirstAlive();
 	if (life !== null) {
 		life.kill();
-		socket.emit('vibrate', 'hit');
+		if(multiplePlayer){
+			socket.emit('vibrate1', 'hit');
+		}else{
+			socket.emit('vibrate', 'hit');
+		}
 		setPlayerSpawnTimeUndead();
 		player.reset(game.width / 2, game.height - 50);
 	} else {
@@ -616,16 +851,22 @@ function playerHitByBullet(player, bullet) {
 		player.shield.kill();
 		if(FireballsExist === true)
 			resetFireballs();
-		socket.emit('vibrate', 'die');
-		gameOver();
-		launchult();
+		
+		if(multiplePlayer){
+			socket.emit('vibrate1', 'die');
+			gameOver1();
+		}else{
+			socket.emit('vibrate', 'die');
+			gameOver();
+			launchult();
+		}
 	}
 }
 
 function PlayerVsBox(player, box)	{
 	switch(box.type)	{
 		case yellow:
-			FireBallSurround(player);
+			FireBallSurround(player,1);
 			weaponLevel--
 			break;
 		case orange:
@@ -700,29 +941,226 @@ function superPlayer(){
 	}, this);
 }
 
+//=============multiplePlayer===============================================================multiplePlayer=====================================
+function enemyHit2(bullet, enemy) {
+	bullet.kill();
+	enemy.damage(1);
+	//if (enemy.alive) play hit animation(not available yet) else play explode animation
+	explode(enemy);
+	score2 += 10;
+}
+
+function rayenemyHit2(bullet, enemy) {
+	enemy.damage(1);
+	//if (enemy.alive) play hit animation(not available yet) else play explode animation
+	explode(enemy);
+	score2 += 10;
+}
+
+function lightningenemyHit2(lightning, enemy) {
+	enemy.damage(1);
+	//if (enemy.alive) play hit animation(not available yet) else play explode animation
+	explode(enemy);
+	score2 += 10;
+}
+
+function fireballenemyHit2(fireball, enemy) {
+	enemy.damage(1);
+	//if (enemy.alive) play hit animation(not available yet) else play explode animation
+	explode(enemy);
+	score2 += 10;
+}
+
+function lightningBulletHit2(lightning, bullet) {
+	explode(bullet);
+	bullet.kill();
+	score2 += 5;
+}
+
+function playerHit2(player, enemy) {
+	if (playerSpawnUndead2 === true) {
+		return;
+	}
+	else if (playerSuper2 === true) {
+		explode(enemy);
+		enemy.kill();
+		score2 += 10;
+		return;
+	}
+	explode(enemy);
+	explode(player2);
+	enemy.kill();
+	game.time.events.remove(player2.shield.loop);
+
+	var life = lives2.getFirstAlive();
+	if (life !== null) {
+		life.kill();
+		socket.emit('vibrate2', 'hit');
+		setPlayerSpawnTimeUndead2();
+		player2.reset(game.width * 2 / 3, game.height - 50);
+	} else {
+		player2.kill();
+		player2.shield.kill();
+		if(FireballsExist2 === true)
+			resetFireballs2();
+		socket.emit('vibrate2', 'die');
+		gameOver2();
+		// clear all
+		launchult();
+	}
+}
+
+function playerHitByBullet2(player, bullet) {
+	if (playerSpawnUndead2 === true) {
+		return;
+	}
+	else if (playerSuper2 === true) {
+		bullet.kill();
+		return;
+	}
+	explode(player2);
+	bullet.kill();
+	game.time.events.remove(player2.shield.loop);
+
+	var life = lives2.getFirstAlive();
+	if (life !== null) {
+		life.kill();
+		socket.emit('vibrate2', 'hit');
+		setPlayerSpawnTimeUndead2();
+		player2.reset(game.width * 2 / 3, game.height - 50);
+	} else {
+		player2.kill();
+		player2.shield.kill();
+		if(FireballsExist2 === true)
+			resetFireballs2();
+		socket.emit('vibrate2', 'die');
+		gameOver2();
+		launchult();
+	}
+}
+
+function PlayerVsBox2(player, box)	{
+	switch(box.type)	{
+		case yellow:
+			FireBallSurround(player2,2);
+			weaponLevel2--
+			break;
+		case orange:
+			weaponLevel2--;
+			heal2();
+			break;
+		case green:
+			weaponLevel2--;
+			if(fireRate2>100){
+				fireRate2-=25;
+				rayfireRate2-=100;
+				lightningfireRate2-=250;
+			}
+			break;
+		case chocolate:
+			break;
+		case blue:
+			break;
+		case dark_blue:
+			break;
+		case gray:
+			break;
+		case colorful:
+			superPlayer2();
+			break;
+	}
+
+	box.kill();
+	score2 += 50;
+	if( weaponLevel2 < MAX_WEAPON_LEVEL )
+		weaponLevel2 ++;
+}
+
+function heal2()	{
+	var dead_lives = lives2.countDead();
+	if( dead_lives > 0 ) 	{
+		var newlife = lives2.getChildAt(dead_lives-1);
+		newlife.reset(this.game.width - 10 - (MAX_LIFE * 30) + 30*(dead_lives-1) , 70);
+	}
+}
+
+function superPlayer2(){
+// When got a colorful box, the player can become undead and kill the enemies (except turrets) with bumping
+	var tint = player2.tint;
+	player2.alpha = 1;
+	tweenPlayer2.stop();
+	playerSuper2 = true;
+	playerSpawnUndead2 = false;
+	var startTime = Date.now();
+	var tween1 = game.add.tween(player2).to({ tint: 0xff00ff }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
+	var tween2 = game.add.tween(player2).to({ tint: 0x00ffff }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
+	var tween3 = game.add.tween(player2).to({ tint: 0x0000ff }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
+	var tween4 = game.add.tween(player2).to({ tint: 0xff00ff }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
+	var tween5 = game.add.tween(player2).to({ tint: 0xff0000 }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
+	var tween6 = game.add.tween(player2).to({ tint: 0xffff00 }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
+	tween1.chain(tween2);
+	tween2.chain(tween3);
+	tween3.chain(tween4);
+	tween4.chain(tween5);
+	tween5.chain(tween6);
+	tween6.chain(tween1);
+	tween1.start();
+	game.time.events.add(playerSuperTime, function(){
+		tween1.stop();
+		tween2.stop();
+		tween3.stop();
+		tween4.stop();
+		tween5.stop();
+		tween6.stop();
+		player2.tint = tint;
+		playerSuper2 = false;
+	}, this);
+}
+//=============================================================================================================================================
+
 function swap(){
 	if(weaponMode===BULLET) weaponMode=LIGHTNING;
 	else if(weaponMode===LIGHTNING) weaponMode=RAY;
 	else weaponMode=BULLET;
 }
 
-function FireBallSurround(sprite){
+function FireBallSurround(sprite,num){
 	if (fireballs.countDead() === 0) {
 		for(var i = 0; i < MAX_FIREBALL; i++){
-			game.time.events.remove(fireballEvent[i]);
-			fireballEvent[i] = game.time.events.add(Phaser.Timer.SECOND * FIREBALL_TIME, fadeFireball, this, Ball[i]);
+			if(num === 1){
+				game.time.events.remove(fireballEvent[i]);
+				fireballEvent[i] = game.time.events.add(Phaser.Timer.SECOND * FIREBALL_TIME, fadeFireball, this, Ball[i]);
+			}
+			if(num === 2){
+				game.time.events.remove(fireballEvent2[i]);
+				fireballEvent2[i] = game.time.events.add(Phaser.Timer.SECOND * FIREBALL_TIME, fadeFireball, this, Ball[i]);
+			}
 		}
 		return;
 	}
 
-	FireballsExist=true;
+	if(num ===1){
+		FireballsExist=true;
+	}
+	if(num ===2){
+		FireballsExist2=true;
+	}
 	fireballStartTime = game.time.now;
 	for(var i = 0; i < MAX_FIREBALL; i++){
-		Ball[i] = fireballs.getFirstDead();
-		Ball[i].reset(sprite.x, sprite.y);
-		Ball[i].animations.add('flame', [0,1,2], 3, true);
-		Ball[i].play('flame', 15, true, false);
-		fireballEvent[i] = game.time.events.add(Phaser.Timer.SECOND * FIREBALL_TIME, fadeFireball, this, Ball[i]);
+		if(num === 1){
+			Ball[i] = fireballs.getFirstDead();
+			Ball[i].reset(sprite.x, sprite.y);
+			Ball[i].animations.add('flame', [0,1,2], 3, true);
+			Ball[i].play('flame', 15, true, false);
+			fireballEvent[i] = game.time.events.add(Phaser.Timer.SECOND * FIREBALL_TIME, fadeFireball, this, Ball[i]);
+		}
+		if(num === 2){
+			Ball2[i] = fireballs.getFirstDead();
+			Ball2[i].reset(sprite.x, sprite.y);
+			Ball2[i].animations.add('flame', [0,1,2], 3, true);
+			Ball2[i].play('flame', 15, true, false);
+			fireballEvent2[i] = game.time.events.add(Phaser.Timer.SECOND * FIREBALL_TIME, fadeFireball, this, Ball2[i]);
+		}
 	}
 }
 
@@ -750,8 +1188,51 @@ function gameOver(){
 	// save to DB
 	var user = {name: "treetreeTest", score: parseInt(score), time: Date.now()};
 	socket.emit("data", user);
-
 }
+
+//==================multiplePlayer========================
+var player1Die = false, player2Die = false;
+function gameOver1(){
+	player1Die = true;
+	if(player2Die){
+		state = ENDGAME;
+		launchult();
+		DIFFICULTY = 1;
+		game.time.events.remove(levelup_loop);
+		if(score > score2){
+			gameOverText = game.add.bitmapText(game.width/2, game.height/2, 'minecraftia', 'Player1 Wins');
+		}else if(score < score2){
+			gameOverText = game.add.bitmapText(game.width/2, game.height/2, 'minecraftia', 'Player2 Wins');
+		}else{
+			gameOverText = game.add.bitmapText(game.width/2, game.height/2, 'minecraftia', 'Tie');
+		}
+		gameOverText.anchor.setTo(0.5, 0.5);
+
+		//initialize velocity
+		enemy_bullet_velocity = [200, 350, 250, 200];
+	}
+}
+function gameOver2(){
+	player2Die = true;
+	if(player1Die){
+		state = ENDGAME;
+		launchult();
+		DIFFICULTY = 1;
+		game.time.events.remove(levelup_loop);
+		if(score > score2){
+			gameOverText = game.add.bitmapText(game.width/2, game.height/2, 'minecraftia', 'Player1 Wins');
+		}else if(score < score2){
+			gameOverText = game.add.bitmapText(game.width/2, game.height/2, 'minecraftia', 'Player2 Wins');
+		}else{
+			gameOverText = game.add.bitmapText(game.width/2, game.height/2, 'minecraftia', 'Tie');
+		}
+		gameOverText.anchor.setTo(0.5, 0.5);
+
+		//initialize velocity
+		enemy_bullet_velocity = [200, 350, 250, 200];
+	}
+}
+//========================================================
 
 function setupBackground(){
 	game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -805,7 +1286,46 @@ function setPlayerSpawnTimeUndead(){
 		playerSpawnUndead = false;
 	}, this);
 }
+//==========multiplePlayer==========
+function setupPlayer2(isSetSpawnTimeUndead){
+	isSetSpawnTimeUndead = typeof isSetSpawnTimeUndead !== 'undefined' ? isSetSpawnTimeUndead : true;
 
+	player2 = game.add.sprite(game.width * 2 / 3, game.height - 50, 'player2');
+	game.physics.arcade.enable(player2);
+	player2.body.collideWorldBounds = true;
+	player2.anchor.x = 0.5;
+	player2.anchor.y = 0.5;
+
+	player2.scale.setTo(1.5, 1.5);
+
+	// shield
+	player2.shield = game.add.sprite(player2.x, player2.y, 'shield2');
+	game.physics.arcade.enable(player2.shield);
+	player2.shield.anchor.x = 0.5;
+	player2.shield.anchor.y = 0.5;
+	player2.shield.animations.add('effect', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], 20, true);
+	player2.shield.animations.play('effect');
+	player2.shield.loop = game.time.events.loop(Phaser.Timer.SECOND * 3, function()	{
+		player2.shield.animations.play('effect');
+	}, this);
+
+	player2.nextRocket = 0; 	// Rocket related
+
+	if (isSetSpawnTimeUndead === true)
+		setPlayerSpawnTimeUndead2();
+}
+
+function setPlayerSpawnTimeUndead2(){
+	player2.alpha = 1;
+	playerSpawnUndead2 = true;
+	tweenPlayer2 = game.add.tween(player2).to( { alpha: 0.5 }, 200, Phaser.Easing.Linear.None, true, 0, playerSpawnUndeadTime / (200 * 2), true);
+	game.time.events.add(playerSpawnUndeadTime, function(){
+		player2.alpha = 1;
+		tweenPlayer2.stop();
+		playerSpawnUndead2 = false;
+	}, this);
+}
+//==================================
 function setupBullets(){
 	bullets = game.add.group();
 	bullets.enableBody = true;
@@ -834,10 +1354,40 @@ function setupLightnings(){
 	lightnings.setAll('anchor.x', 0.5);
 }
 
+//==========multiplePlayer==========
+function setupBullets2(){
+	bullets2 = game.add.group();
+	bullets2.enableBody = true;
+	bullets2.physicsBodyType = Phaser.Physics.ARCADE;
+	bullets2.createMultiple(weapon_num[BULLET], 'bullet2');
+	bullets2.setAll('checkWorldBounds', true);
+	bullets2.setAll('outOfBoundsKill', true);
+}
+
+function setupRays2(){
+	rays2 = game.add.group();
+	rays2.enableBody = true;
+	rays2.physicsBodyType = Phaser.Physics.ARCADE;
+	rays2.createMultiple(weapon_num[RAY], 'ray2');
+	rays2.setAll('checkWorldBounds', true);
+	rays2.setAll('outOfBoundsKill', true);
+	rays2.setAll('anchor.x', 0.5);
+	rays2.setAll('anchor.y', 0.8);
+}
+
+function setupLightnings2(){
+	lightnings2 = game.add.group();
+	lightnings2.enableBody = true;
+	lightnings2.physicsBodyType = Phaser.Physics.ARCADE;
+	lightnings2.createMultiple(weapon_num[LIGHTNING], 'lightning2');
+	lightnings2.setAll('anchor.x', 0.5);
+}
+//==================================
+
 function setupFireRate(){
-	fireRate = 200;
-	rayfireRate = 500;
-	lightningfireRate = 2000;
+	fireRate = 200; fireRate2 = 200;
+	rayfireRate = 500; rayfireRate2 = 500;
+	lightningfireRate = 2000; lightningfireRate2 = 2000;
 }
 
 function setupFireBalls(){
@@ -902,6 +1452,27 @@ function resetPlayerLives(){
 		lifeIcon.anchor.setTo(0.5, 0.5);
 	}
 }
+
+//=================multiplePlayer==================
+function setupPlayerLives2(){
+	lives2 = game.add.group();
+	var firstLifeIconX = this.game.width - 10 - (MAX_LIFE * 30);
+	for (var i = 0; i < MAX_LIFE; i++) {
+		var lifeIcon = this.lives2.create(firstLifeIconX + (30 * i), 70, 'player2');
+		lifeIcon.scale.setTo(0.8, 0.8);
+		lifeIcon.anchor.setTo(0.5, 0.5);
+	}
+}
+
+function resetPlayerLives2(){
+	var firstLifeIconX = this.game.width - 10 - (MAX_LIFE * 30);
+	for (var i = 0; i < MAX_LIFE; i++) {
+		var lifeIcon = this.lives2.create(firstLifeIconX + (30 * i), 70, 'player2');
+		lifeIcon.scale.setTo(0.8, 0.8);
+		lifeIcon.anchor.setTo(0.5, 0.5);
+	}
+}
+//================================================
 
 function setupBoxes() {
 	boxes = game.add.group();
