@@ -80,6 +80,9 @@ io.on('connection', function(socket){
   socket.on('switch_weapon', function(msg){
 	   io.emit('switch_weapon', msg);
   });
+  socket.on('data', function(data){
+	   SaveToDB(data);
+  });
   //=====
 
   //=====Web to Android
@@ -151,6 +154,7 @@ firebaseDB.scoresRef.orderByChild("score").limitToLast(10).on("value", function(
     scoreBoard = count + ((count == 10)?' ' : '  ') + user.name + ' ' + user.score + '\n' + scoreBoard;
     count --;
   });
+
 });
 
 function SaveToDB(data) {
