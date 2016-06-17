@@ -14,8 +14,8 @@ var firebase = require("firebase");
   var db = mainApp.database();
   var scoresRef = db.ref("scores");
 
-  var updateScore = function(value) {
-    scoresRef.push().update(value);
+  var updateScore = function(value, oncomplete) {
+    scoresRef.push().update(value, oncomplete);
   };
 
 

@@ -147,18 +147,18 @@ function create() {
 function update() {
 	background.tilePosition.y += background_movement;
 	enemys[FORT].forEachAlive(function(enemy)	{
-		enemy.position.y += background_movement;
+		enemy.y += background_movement;
 	}, this);
-
-	updateText();
 
 	player.body.velocity.x = 10*(-newY);
 	player.body.velocity.y = 10*(-newX);
 
-	player.shield.position.x = player.position.x;
-	player.shield.position.y = player.position.y + player.height/2;
+	player.shield.x = player.x;
+	player.shield.y = player.y + player.height/2;
 
 	if(state === INGAME && player.alive){
+
+		updateText();
 
 		if(DIFFICULTY_CHANGE === NOCHANGE){
 			spawn_enemy();
@@ -195,6 +195,12 @@ function update() {
 			game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
 		}
 		game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this); // Player vs Boxes
+	}else {
+		// animate gameover Text to center
+		if( gameOverText != null && gameOverText.alive )	{
+			if( gameOverText.y < game.height/2 )
+			 	gameOverText.y += 2*background_movement;
+		}
 	}
 }
 
@@ -741,7 +747,9 @@ function gameOver(){
 	state = ENDGAME;
 	DIFFICULTY = 1;
 	game.time.events.remove(levelup_loop);
-	gameOverText = game.add.text(game.width/2, game.height / 2, 'Game Over!', { font: '32px sans-serif', fill: '#fff'});
+	if( difficultyText != null )
+		difficultyTextDel();
+	gameOverText = game.add.text(game.width/2, 0, 'Game Over!', { font: '32px sans-serif', fill: '#fff'});
 	gameOverText.anchor.setTo(0.5, 0.5);
 
 	//initialize velocity
