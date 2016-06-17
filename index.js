@@ -34,6 +34,7 @@ io.on('connection', function(socket){
 	if(msg == 'fire'){
 		io.emit('shoot', msg);
 	}else if(msg == 'start'){
+    console.log('start game');
 		io.emit('start', msg);
 	}
   });
@@ -53,7 +54,10 @@ io.on('connection', function(socket){
 	   io.emit('connectOK', msg);
   });
   socket.on('ultra', function(msg){
-	   if(msg == 'start') io.emit('start', msg);
+	   if(msg == 'start')  {
+       console.log('start game');
+       io.emit('start', msg);
+     }
 	    else io.emit('ultra', msg);
   });
   socket.on('switch_weapon', function(msg){
