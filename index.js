@@ -9,11 +9,6 @@ var bodyParser = require('body-parser');
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
-// add Mongo db
-var mongoose = require('mongoose')
-mongoose.connect('mongodb://127.0.0.1/User')
-
-var highScore = require('./models/highScore.js');
 var firebaseDB = require('./firebase.js');
 
 app.get('/', function(req, res){
@@ -81,7 +76,7 @@ io.on('connection', function(socket){
 	   io.emit('switch_weapon', msg);
   });
   //=====
-  
+
   //=====Web to Android
   socket.on('vibrate', function(msg){
 	   io.emit('connectOK', msg);
@@ -102,8 +97,8 @@ io.on('connection', function(socket){
 	   io.emit(player2uuid, msg);
   });
   //=====
-  
-  //=====Android to server  
+
+  //=====Android to server
   socket.on('requestPlayer', function(msg){
 	if(msg == player1uuid || msg == player2uuid){return;}
 	if(!player1status){
@@ -138,15 +133,6 @@ io.on('connection', function(socket){
 http.listen(3000, function(){
   console.log('listening on *:3000');
 });
-
-/*app.get('/user', function (req, res) {
-  console.log(req.query);
-  firebaseDB.updateScore({
-    name: req.query.name,
-    score: parseInt(req.query.score)
-  });
-  res.json({ message: 'success' });
-}); */
 
 var scoreBoard;
 
