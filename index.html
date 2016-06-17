@@ -32,7 +32,7 @@ function preload() {
 	game.load.image('square', '/assets/tile_question_box.png');
 	game.load.image('ultsign', '/assets/50ult.png');
 	game.load.image('ultsign_g', '/assets/50ult_gray.png');
-	game.load.image('UFO', '/assets/ufo.png');
+	game.load.image('boss', '/assets/ufo.png');
 	game.load.spritesheet('bonus_cube', 'assets/shump_assets/cubes.png', 24, 24);
 	game.load.spritesheet('enemy0', '/assets/shump_assets/mob_turret_1.png', 24, 24);
 	game.load.spritesheet('explosion', 'assets/shump_assets/explosion_1.png', 32, 32);
@@ -65,7 +65,7 @@ const LEVELUP_TIME = 25;
 var DIFFICULTY = 1;
 var DIFFICULTY_CHANGE=NOCHANGE;
 var difficultyText;
-var levelup_loop;
+var levelup_loop, levelupLoopRemove;
 var score = 0;
 var scoreText;
 var scoreBoardText;
@@ -115,8 +115,11 @@ var enemyBullet_num = [200, 200];
 var enemy_bullet_velocity = [200, 350, 250, 200];
 
 // BOSS
-const UFO_HEALTH = 500000;
-var boss;
+const MAX_BOSS = 3;
+const BOSS_STAGE_FREQ = 2;
+const BOSS_HEALTH = 500, BOSS_SPEED = 5;
+var bossSpawned = false;
+var bosses;
 var bossBullet;
 
 //Others
@@ -129,6 +132,7 @@ var explosionPool;
 
 function create() {
 	setupBackground();
+	setupBoss();
 	setupEnemys();
 	setupEnemyBullets();
 	setupPlayer(false);
@@ -163,43 +167,115 @@ function update() {
 	if(state === INGAME && player.alive){
 
 		updateText();
-
+		
+		if(DIFFICULTY % BOSS_STAGE_FREQ === 0) { // in boss stage
+				for( var i = 0; i < ENEMY_KINDS; i++){
+					enemys[i].forEachAlive(function (enemy) {
+						explode(enemy);
+						enemy.kill();
+					}, this);
+				}
+				for( var i = 0; i < ENEMY_BULLET_KINDS; i++){
+					enemyBullets[i].forEachAlive(function (bullet) {
+						explode(bullet);
+						bullet.kill();
+					}, this);
+				}
+		}
+		
 		if(DIFFICULTY_CHANGE === NOCHANGE){
-			spawn_enemy();
-			plane_attack();
+		
 			add_boxes();
+			
+			if(DIFFICULTY % BOSS_STAGE_FREQ === 0) { // in boss stage
+				if( bossSpawned === false){
+					bossSpawned = true;
+					spawn_boss();
+				}
+				if( levelupLoopRemove === false ){
+					levelupLoopRemove = true;
+					game.time.events.remove(levelup_loop);
+				}
+				if( bosses.countDead() === MAX_BOSS ){
+					DIFFICULTY_CHANGE = CHANGING;
+					DIFFICULTY++;
+					bossSpawned = false;
+					levelupLoopRemove = false;
+					enemy_bullet_velocity[0] += 20;
+					enemy_bullet_velocity[1] += 35;
+					enemy_bullet_velocity[2] += 25;
+					enemy_bullet_velocity[3] += 20;
+					difficultyText = game.add.text(game.width/2, game.height/2, 'Difficulty: '+DIFFICULTY, { fontSize: '20px', fill: '#000' });
+					difficultyText.anchor.setTo(0.5, 0.5);
+					game.time.events.add(Phaser.Timer.SECOND * 5, difficultyTextDel, this);
+					levelup_loop = game.time.events.loop(Phaser.Timer.SECOND * LEVELUP_TIME, difficultyUP, this);
+				}
+				boss_attack();
+			} else{
+				spawn_enemy();
+				plane_attack();
+			}
 		}
 
 		//player self group related
 		createRocket();
 		rotateRocket();
-
-		for(var i = 0 ; i < ENEMY_KINDS ; i ++ ){
-			if(weaponMode === BULLET) game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this); // Bullets vs Enemys
-			else if(weaponMode === RAY) game.physics.arcade.overlap(rays, enemys[i], rayenemyHit, null, this); // Rays vs Enemys
+		
+		if(DIFFICULTY % BOSS_STAGE_FREQ === 0) { // in boss stage
+			if(weaponMode === BULLET) game.physics.arcade.overlap(bullets, bosses, enemyHit, null, this); // Bullets vs Enemys
+			else if(weaponMode === RAY) game.physics.arcade.overlap(rays, bosses, rayenemyHit, null, this); // Rays vs Enemys
 			else if(weaponMode === LIGHTNING){
-				game.physics.arcade.overlap(lightnings, enemys[i], lightningenemyHit, null, this); // Lightnings vs Enemys
-				for(var j = 0; j < ENEMY_BULLET_KINDS; j++){ // Lightnings vs Enemy Bullets
-					game.physics.arcade.overlap(lightnings, enemyBullets[i], lightningBulletHit, null, this);
-				}
+				game.physics.arcade.overlap(lightnings, bosses, lightningenemyHit, null, this); // Lightnings vs Enemys
+				//for(var j = 0; j < ENEMY_BULLET_KINDS; j++){ // Lightnings vs Enemy Bullets
+				//	game.physics.arcade.overlap(lightnings, enemyBullets[i], lightningBulletHit, null, this);
+				//}
 			}
+			
+			game.physics.arcade.overlap(player, bosses, playerHit, null, this); // Player vs Boss
+						
 			if(FireballsExist === true){ // Fireballs exist
 				var par = (game.time.now - fireballStartTime) / 1000 * Math.PI;
 				for(var j = 0; j < MAX_FIREBALL; j++){
 					Ball[j].position.x = player.position.x + FIREBALL_RADIUS * Math.sin(par + 2/MAX_FIREBALL * j * Math.PI);
 					Ball[j].position.y = player.position.y + FIREBALL_RADIUS * Math.cos(par + 2/MAX_FIREBALL * j * Math.PI);
 				}
-				game.physics.arcade.overlap(fireballs, enemys[i], fireballenemyHit, null, this); // Fireballs vs Enemys
+				game.physics.arcade.overlap(fireballs, bosses, fireballenemyHit, null, this); // Fireballs vs Enemys
 			}
-			if(i != FORT) // player(on sky) cannot touch forts(on land)
-				game.physics.arcade.overlap(player, enemys[i], playerHit, null, this); // Player vs Enemys
-			game.physics.arcade.overlap(rocketPool, enemys[i], enemyHit, null, this); // Rockets vs Enemys
-		}
-		for(var i = 0; i < ENEMY_BULLET_KINDS; i++){ // Player vs Enemy Bullets
-			game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
+			
+			game.physics.arcade.overlap(rocketPool, bosses, enemyHit, null, this); // Rockets vs Enemys
+			
+			//for(var i = 0; i < ENEMY_BULLET_KINDS; i++){ // Player vs Enemy Bullets
+				game.physics.arcade.overlap(player, enemyBullets[1], playerHitByBullet, null, this);
+				//game.physics.arcade.overlap(player, boseBullets, playerHitByBullet, null, this);
+			//}	
+		} else {
+			for(var i = 0 ; i < ENEMY_KINDS ; i ++ ){
+				if(weaponMode === BULLET) game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this); // Bullets vs Enemys
+				else if(weaponMode === RAY) game.physics.arcade.overlap(rays, enemys[i], rayenemyHit, null, this); // Rays vs Enemys
+				else if(weaponMode === LIGHTNING){
+					game.physics.arcade.overlap(lightnings, enemys[i], lightningenemyHit, null, this); // Lightnings vs Enemys
+					for(var j = 0; j < ENEMY_BULLET_KINDS; j++){ // Lightnings vs Enemy Bullets
+						game.physics.arcade.overlap(lightnings, enemyBullets[i], lightningBulletHit, null, this);
+					}
+				}
+				if(FireballsExist === true){ // Fireballs exist
+					var par = (game.time.now - fireballStartTime) / 1000 * Math.PI;
+					for(var j = 0; j < MAX_FIREBALL; j++){
+						Ball[j].position.x = player.position.x + FIREBALL_RADIUS * Math.sin(par + 2/MAX_FIREBALL * j * Math.PI);
+						Ball[j].position.y = player.position.y + FIREBALL_RADIUS * Math.cos(par + 2/MAX_FIREBALL * j * Math.PI);
+					}
+					game.physics.arcade.overlap(fireballs, enemys[i], fireballenemyHit, null, this); // Fireballs vs Enemys
+				}
+				if(i != FORT) // player(on sky) cannot touch forts(on land)
+					game.physics.arcade.overlap(player, enemys[i], playerHit, null, this); // Player vs Enemys
+				game.physics.arcade.overlap(rocketPool, enemys[i], enemyHit, null, this); // Rockets vs Enemys
+			}
+			for(var i = 0; i < ENEMY_BULLET_KINDS; i++){ // Player vs Enemy Bullets
+				game.physics.arcade.overlap(player, enemyBullets[i], playerHitByBullet, null, this);
+			}
 		}
 		game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this); // Player vs Boxes
-	}else {
+	} else {
 		// animate gameover Text to center
 		if( gameOverText != null && gameOverText.alive )	{
 			if( gameOverText.y < game.height/2 )
@@ -259,8 +335,11 @@ function updateText(){
 }
 
 function difficultyUP(){
-	DIFFICULTY++;
+	if(DIFFICULTY % BOSS_STAGE_FREQ === 0){
+		levelupLoopRemove = false;
+	}
 	DIFFICULTY_CHANGE = CHANGING;
+	DIFFICULTY++;
 	enemy_bullet_velocity[0] += 20;
 	enemy_bullet_velocity[1] += 35;
 	enemy_bullet_velocity[2] += 25;
@@ -349,6 +428,12 @@ function launchult(){
 				bullet.kill();
 			}, this);
 		}
+		bosses.forEachAlive(function (boss) {
+				explode(boss);
+				boss.damage(ULT_DAMAGE);
+				if( !boss.alive ) score += 10;
+				score += 10;
+		}, this);
 		game.time.events.add(Phaser.Timer.SECOND * 10, fillult, this);
 	}
 }
@@ -437,6 +522,17 @@ function spawn_enemy() {
 	}
 }
 
+function spawn_boss() {
+	if( !player.alive )
+		return;
+	if(bosses.countDead() > 0){
+		var boss = bosses.getFirstExists(false);
+		boss.reset( game.width / 2, 0, BOSS_HEALTH);
+		boss.body.velocity.y = BOSS_SPEED;
+		boss.bossNextFire = 0;
+	}
+}
+
 function fort_attack(enemy)	{
 	if ( enemyBullets[FORT_BULLET].countDead() > 0 && enemy.alive ){
 		enemy.play('open');
@@ -498,6 +594,17 @@ function plane_attack() {
 				enemy_bullet.reset(enemy.x - 50, enemy.y + enemy.height/2 - i*30);
 				game.physics.arcade.moveToObject(enemy_bullet, player, enemy_bullet_velocity[PLANE_LARGE]);
 			}
+		}
+	}, this);
+}
+
+function boss_attack() {
+	bosses.forEachAlive(function (boss){
+		if (game.time.now > boss.bossNextFire && enemyBullets[1].countDead() > 0){ //bossbullet
+			boss.bossNextFire = game.time.now + game.rnd.integerInRange(5000, 10000);
+			var boss_bullet = enemyBullets[1].getFirstDead();
+			boss_bullet.reset(boss.x, boss.y + boss.height/2);
+			boss_bullet.body.velocity.y = enemy_bullet_velocity[PLANE_SMALL] * 3;
 		}
 	}, this);
 }
@@ -705,7 +812,6 @@ function superPlayer(){
 	}, this);
 }
 
-
 function swap(){
 	if(weaponMode===BULLET) weaponMode=LIGHTNING;
 	else if(weaponMode===LIGHTNING) weaponMode=RAY;
@@ -877,6 +983,24 @@ function setupEnemys(){
 			enemy.body.height *= enemy.scale.y;
 		});
 	}
+}
+
+function setupBoss(){
+	bosses = game.add.group();
+	bosses.enableBody = true;
+	bosses.physicsBodyType = Phaser.Physics.ARCADE;
+	bosses.createMultiple(MAX_BOSS, 'boss');
+	bosses.setAll('checkWorldBounds', true);
+	bosses.setAll('outOfBoundsKill', true);
+	bosses.setAll('anchor.x', 0.5);
+	bosses.setAll('anchor.y', 0.5);
+	//bosses.setAll('scale.x', (i == 3) ? 3 : 1.5);
+	//bosses.setAll('scale.y', (i == 3) ? 3 : 1.5);
+
+	/*bosses.forEach(function(boss)	{
+		boss.body.width *= enemy.scale.x;
+		boss.body.height *= enemy.scale.y;
+	});*/
 }
 
 function setupEnemyBullets(){
