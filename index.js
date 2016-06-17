@@ -162,7 +162,12 @@ function SaveToDB(data) {
     name: data.name,
     score: parseInt(data.score),
     time: data.time
+  }, function(err) {
+    if( err == null ) {
+      // success
+      // send scoreBoard string to web
+      io.emit("scoreBoard", scoreBoard);
+    }
   });
   console.log('int save to db');
-  io.emit("scoreBoard", scoreBoard);
 }
