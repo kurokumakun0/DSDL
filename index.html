@@ -39,6 +39,7 @@ function preload() {
 	game.load.spritesheet('lightning', 'assets/lightning.png', 55, 208);
 	game.load.spritesheet('rocket', 'assets/arrows.png', 48, 48);
 	game.load.spritesheet('fireball', '/assets/fireball.png', 32, 30);
+	this.load.bitmapFont('minecraftia', '/assets/shump_assets/minecraftia.png', '/assets/shump_assets/minecraftia.xml');
 }
 
 //Weapon Ult
@@ -66,6 +67,7 @@ var difficultyText;
 var levelup_loop;
 var score = 0;
 var scoreText;
+var scoreBoardText;
 var gamestartMenu;
 var gameOverText;
 var state = 0;
@@ -145,13 +147,13 @@ function update() {
 
 	updateText();
 
-	if(state === INGAME){
+	player.body.velocity.x = 10*(-newY);
+	player.body.velocity.y = 10*(-newX);
 
-		player.body.velocity.x = 10*(-newY);
-		player.body.velocity.y = 10*(-newX);
+	player.shield.position.x = player.position.x;
+	player.shield.position.y = player.position.y + player.height/2;
 
-		player.shield.position.x = player.position.x;
-		player.shield.position.y = player.position.y + player.height/2;;
+	if(state === INGAME && player.alive){
 
 		if(DIFFICULTY_CHANGE === NOCHANGE){
 			spawn_enemy();
@@ -210,6 +212,7 @@ function listenSocket(){
 			score = 0;
 			resetPlayerLives();
 			gameOverText.kill();
+			scoreBoardText.kill();
 		}
 		resetMenu();
 	});
@@ -227,6 +230,10 @@ function listenSocket(){
 	});
 	socket.on('switch_weapon', function(msg){
 		 weaponMode = msg;
+	});
+	socket.on('scoreBoard', function(data)	{
+		scoreBoardText = game.add.bitmapText(game.width/2, game.height/2 + 32, 'minecraftia', data);
+		scoreBoardText.anchor.setTo(0.5, 0.5);
 	});
 }
 
@@ -373,6 +380,10 @@ function resetFireballs(){
 }
 
 function spawn_enemy() {
+
+	if( !player.alive )
+		return;
+
 	if (game.time.now > nextEnemy[FORT] && enemys[FORT].countDead() > 0){ // Spawn forts
 		nextEnemy[FORT] = game.time.now + game.rnd.integerInRange(10000, 10000);
 		var enemy = enemys[FORT].getFirstExists(false);
@@ -438,6 +449,10 @@ function fort_attack(enemy)	{
 }
 
 function plane_attack() {
+
+	if( !player.alive )
+		return;
+
 	enemys[PLANE_SMALL].forEachAlive(function (enemy) {
 		if (game.time.now > enemy.enemyNextFire && enemyBullets[PLANE_SMALL_BULLET].countDead() > 0){
 			enemy.enemyNextFire = game.time.now + game.rnd.integerInRange(1000, 3000);
@@ -472,6 +487,7 @@ function plane_attack() {
 }
 
 function createRocket()	{
+
 	if (game.time.now > player.nextRocket && rocketPool.countDead() > 0){
 		player.nextRocket = game.time.now + ROCKET_COOLDOWN;
 		for( var i = 0 ; i <= weaponLevel ; i ++ )	{
@@ -566,6 +582,8 @@ function playerHit(player, enemy) {
 			resetFireballs();
 		socket.emit('vibrate', 'die');
 		gameOver();
+		// clear all
+		launchult();
 	}
 }
 
@@ -594,6 +612,7 @@ function playerHitByBullet(player, bullet) {
 			resetFireballs();
 		socket.emit('vibrate', 'die');
 		gameOver();
+		launchult();
 	}
 }
 

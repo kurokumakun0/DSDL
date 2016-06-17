@@ -91,10 +91,17 @@ http.listen(3000, function(){
   res.json({ message: 'success' });
 }); */
 
+var scoreBoard;
+
 firebaseDB.scoresRef.orderByChild("score").limitToLast(10).on("value", function(snapshot) {
+
+  var count = snapshot.numChildren();
+  scoreBoard = '';
   snapshot.forEach(function(data) {
     var user = data.val();
-    console.log("The " + user.name + "'s score is " + user.score);
+    //console.log("The " + user.name + "'s score is " + user.score);
+    scoreBoard = count + ((count == 10)?' ' : '  ') + user.name + ' ' + user.score + '\n' + scoreBoard;
+    count --;
   });
 });
 
@@ -104,4 +111,6 @@ function SaveToDB(data) {
     score: parseInt(data.score),
     time: data.time
   });
+  console.log('int save to db');
+  io.emit("scoreBoard", scoreBoard);
 }
