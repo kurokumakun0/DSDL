@@ -5,16 +5,23 @@ var io = require('socket.io')(http);
 /*global.document = document;
 global.Phaser = Phaser = require('Phaser/build/custom/phaser-arcade-physics');*/
 
+var bodyParser = require('body-parser');
+app.use(bodyParser.json()); // support json encoded bodies
+app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
+
+// add Mongo db
+var mongoose = require('mongoose')
+mongoose.connect('mongodb://127.0.0.1/User')
+
+var highScore = require('./models/highScore.js');
+var firebaseDB = require('./firebase.js');
+
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
 
 app.use("/assets", express.static(__dirname + '/assets'));
-
-/*app.get('/', function(req, res){
-  res.send('<h1>Hello world</h1>');
-  console.log('get');
-});*/
+//app.use(express.static(__dirname));
 
 io.on('connection', function(socket){
   console.log('a user connected');
@@ -52,6 +59,9 @@ io.on('connection', function(socket){
   socket.on('switch_weapon', function(msg){
 	   io.emit('switch_weapon', msg);
   });
+  socket.on('data', function(data)  {
+    SaveToDB(data);
+  });
   /*socket.on('Z', function(msg){
     //console.log('Z: ' + msg);
 	io.emit('connectOK', 'OK');
@@ -67,3 +77,27 @@ io.on('connection', function(socket){
 http.listen(3000, function(){
   console.log('listening on *:3000');
 });
+
+/*app.get('/user', function (req, res) {
+  console.log(req.query);
+  firebaseDB.updateScore({
+    name: req.query.name,
+    score: parseInt(req.query.score)
+  });
+  res.json({ message: 'success' });
+}); */
+
+firebaseDB.scoresRef.orderByChild("score").limitToLast(10).on("value", function(snapshot) {
+  snapshot.forEach(function(data) {
+    var user = data.val();
+    console.log("The " + user.name + "'s score is " + user.score);
+  });
+});
+
+function SaveToDB(data) {
+  firebaseDB.updateScore({
+    name: data.name,
+    score: parseInt(data.score),
+    time: data.time
+  });
+}

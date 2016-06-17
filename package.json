@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "sync phaser and socket.io",
   "dependencies": {
+    "body-parser": "1.15.0",
     "express": "^4.10.2",
+    "firebase": "^3.0.5",
+    "mongoose": "4.4.12",
     "phaser": "^2.4.8",
     "socket.io": "^1.4.6"
   },

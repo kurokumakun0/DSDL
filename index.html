@@ -709,7 +709,7 @@ function FireBallSurround(sprite){
 		}
 		return;
 	}
-	
+
 	ballsSurrounded=true;
 	fireballStartTime = game.time.now;
 	for(var i = 0; i < 3; i++){
@@ -738,6 +738,11 @@ function gameOver(){
 	game.time.events.remove(levelup_loop);
 	gameOverText = game.add.text(game.width/2, game.height / 2, 'Game Over!', { font: '32px sans-serif', fill: '#fff'});
 	gameOverText.anchor.setTo(0.5, 0.5);
+
+	// save to DB
+	var user = {name: "treetreeTest", score: parseInt(score), time: game.time.now};
+	socket.emit("data", user);
+
 }
 
 function setupBackground(){
@@ -947,19 +952,6 @@ function setupRocket()	{
 		// select the up arrow
 	 	rocket.frame = 42;
 	 });
-}
-
-/*
- *	show debug message
- */
-function render() {
-	game.debug.body(player);
-    game.debug.spriteInfo(player, 32, 32);
-    // game.debug.text('angularVelocity: ' + sprite.body.angularVelocity, 32, 200);
-    // game.debug.text('angularAcceleration: ' + sprite.body.angularAcceleration, 32, 232);
-    // game.debug.text('angularDrag: ' + sprite.body.angularDrag, 32, 264);
-    // game.debug.text('deltaZ: ' + sprite.body.deltaZ(), 32, 296);
-
 }
 
 </script>
