@@ -720,7 +720,7 @@ function gameOver(){
 	gameOverText.anchor.setTo(0.5, 0.5);
 
 	// save to DB
-	var user = {name: "treetreeTest", score: parseInt(score), time: game.time.now};
+	var user = {name: "treetreeTest", score: parseInt(score), time: Date.now()};
 	socket.emit("data", user);
 
 }

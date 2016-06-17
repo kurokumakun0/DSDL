@@ -15,7 +15,7 @@ var firebase = require("firebase");
   var scoresRef = db.ref("scores");
 
   var updateScore = function(value) {
-    scoresRef.child(value.name).update(value);
+    scoresRef.push().update(value);
   };
 
 
