@@ -119,6 +119,8 @@ var explosionPool;
 
 function create() {
 	setupBackground();
+	setupEnemys();
+	setupEnemyBullets();
 	setupPlayer(false);
 	setupPlayerLives();
 	setupBullets();
@@ -128,13 +130,12 @@ function create() {
 	setupRocket();
 	setupFireBalls();
 	setupULT();
-	setupEnemys();
-	setupEnemyBullets();
 	setupBoxes();
 	setupExplosions();
 	setupMenu();
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
 	ultText = game.add.text(65, 50, 'ULT state: restore', { fontSize: '20px', fill: '#000' });
+	listenSocket();
 }
 
 function update() {
@@ -142,8 +143,6 @@ function update() {
 	enemys[FORT].forEachAlive(function(enemy)	{
 		enemy.position.y += background_movement;
 	}, this);
-
-	listenSocket();
 
 	updateText();
 
@@ -490,7 +489,7 @@ function createRocket()	{
 
 	if (game.time.now > player.nextRocket && rocketPool.countDead() > 0){
 		player.nextRocket = game.time.now + ROCKET_COOLDOWN;
-		for( var i = 0 ; i <= weaponLevel ; i ++ )	{
+		for( var i = 0 ; i <= weaponLevel/2 ; i ++ )	{
 			var rocket = rocketPool.getFirstDead();
 			rocket.reset(player.x + 50, player.y + player.height/2 );
 			rocket.target = enemys[game.rnd.integerInRange(0, 3)].getFirstAlive();
