@@ -751,13 +751,13 @@ function spawn_enemy() {
 }
 
 function spawn_boss() {
-	if( !player.alive )	{
+	/*if( !player.alive )	{
 		bossSpawned = true;
 		return;
-	}
+	} */
 	if(bosses.countDead() === MAX_BOSS){
-		//var boss = bosses.getFirstExists(false);
-		var boss = bosses.getFirstDead();
+		var boss = bosses.getFirstExists(false);
+		//var boss = bosses.getFirstDead();
 		boss.body.collideWorldBounds = false;
 		boss.reset( game.width / 2, 0, BOSS_HEALTH);
 		boss.body.velocity.y = BOSS_SPEED;
@@ -771,7 +771,7 @@ function spawn_boss() {
 }
 
 function move_boss(current_boss)	{
-	if( current_boss != null )	{
+	if( current_boss != null && current_boss.alive )	{
 		if( !current_boss.body.collideWorldBounds )
 			current_boss.body.collideWorldBounds = true;
 
