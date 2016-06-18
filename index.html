@@ -370,14 +370,14 @@ function listenSocket(){
 		state = STARTGAME;
 		if( !player.alive )	{
 			setupPlayer(false);
+			weaponLevel = 0;
+			score = 0;
+			resetPlayerLives();
+			if( gameOverText != null && gameOverText.alive )
+				gameOverText.kill();
+			if( scoreBoardText != null && scoreBoardText.alive )
+				scoreBoardText.kill();
 		}
-		weaponLevel = 0;
-		score = 0;
-		resetPlayerLives();
-		if( gameOverText != null && gameOverText.alive )
-			gameOverText.kill();
-		if( scoreBoardText != null && scoreBoardText.alive )
-			scoreBoardText.kill();
 		resetMenu();
 	});
 	socket.on('shoot', function(data) {
