@@ -295,7 +295,7 @@ function update() {
 		}
 	}
 	//==================multiplePlayer=================================================================================================
-	if(state === INGAME && (player.alive || player2.alive) && multiplePlayer){
+	if(state === INGAME && multiplePlayer && (player.alive || player2.alive) ){
 		updateText();
 		if(DIFFICULTY_CHANGE === NOCHANGE){
 			spawn_enemy();
