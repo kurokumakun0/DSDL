@@ -172,11 +172,11 @@ function update() {
 		player2.shield.position.y = player2.position.y + player2.height/2;
 	}
 	//=====
-	
+
 	if(state === INGAME && player.alive && !multiplePlayer){
 
 		updateText();
-		
+
 		if(DIFFICULTY % BOSS_STAGE_FREQ === 0 && ENEMYS_KILLED === false) { // in boss stage
 				for( var i = 0; i < ENEMY_KINDS; i++){
 					enemys[i].forEachAlive(function (enemy) {
@@ -192,21 +192,21 @@ function update() {
 				}
 				ENEMYS_KILLED = true;
 		}
-		
+
 		if(DIFFICULTY_CHANGE === NOCHANGE){
-		
+
 			add_boxes();
-			
+
 			if(DIFFICULTY % BOSS_STAGE_FREQ === 0) { // in boss stage
 				if( bossSpawned === false){
-					bossSpawned = true;
+					// bossSpawned = true;
 					spawn_boss();
 				}
 				if( levelupLoopRemove === false ){
 					levelupLoopRemove = true;
 					game.time.events.remove(levelup_loop);
 				}
-				if( bosses.countDead() === MAX_BOSS ){
+				if( bossSpawned && bosses.countDead() === MAX_BOSS ){
 					DIFFICULTY_CHANGE = CHANGING;
 					DIFFICULTY++;
 					bossSpawned = false;
@@ -231,7 +231,7 @@ function update() {
 		//player self group related
 		createRocket();
 		rotateRocket();
-		
+
 		if(DIFFICULTY % BOSS_STAGE_FREQ === 0) { // in boss stage
 			if(weaponMode === BULLET) game.physics.arcade.overlap(bullets, bosses, enemyHit, null, this); // Bullets vs Enemys
 			else if(weaponMode === RAY) game.physics.arcade.overlap(rays, bosses, rayenemyHit, null, this); // Rays vs Enemys
@@ -241,9 +241,9 @@ function update() {
 				//	game.physics.arcade.overlap(lightnings, enemyBullets[i], lightningBulletHit, null, this);
 				//}
 			}
-			
+
 			game.physics.arcade.overlap(player, bosses, playerHit, null, this); // Player vs Boss
-						
+
 			if(FireballsExist === true){ // Fireballs exist
 				var par = (game.time.now - fireballStartTime) / 1000 * Math.PI;
 				for(var j = 0; j < MAX_FIREBALL; j++){
@@ -252,13 +252,13 @@ function update() {
 				}
 				game.physics.arcade.overlap(fireballs, bosses, fireballenemyHit, null, this); // Fireballs vs Enemys
 			}
-						
+
 			game.physics.arcade.overlap(rocketPool, bosses, enemyHit, null, this); // Rockets vs Enemys
-			
+
 			//for(var i = 0; i < ENEMY_BULLET_KINDS; i++){ // Player vs Enemy Bullets
 				game.physics.arcade.overlap(player, enemyBullets[1], playerHitByBullet, null, this);
 				//game.physics.arcade.overlap(player, boseBullets, playerHitByBullet, null, this);
-			//}	
+			//}
 		} else {
 			for(var i = 0 ; i < ENEMY_KINDS ; i ++ ){
 				if(weaponMode === BULLET) game.physics.arcade.overlap(bullets, enemys[i], enemyHit, null, this); // Bullets vs Enemys
@@ -480,17 +480,20 @@ function updateText(){
 
 function difficultyUP(){
 	if(DIFFICULTY % BOSS_STAGE_FREQ === 0){
-		levelupLoopRemove = false;
+		DIFFICULTY_CHANGE = NOCHANGE;
+		levelupLoopRemove = true;
+		game.time.events.remove(levelup_loop);
+	}else {
+		DIFFICULTY_CHANGE = CHANGING;
+		DIFFICULTY++;
+		enemy_bullet_velocity[0] += 20;
+		enemy_bullet_velocity[1] += 35;
+		enemy_bullet_velocity[2] += 25;
+		enemy_bullet_velocity[3] += 20;
+		difficultyText = game.add.text(game.width/2, game.height/2, 'Difficulty: '+DIFFICULTY, { fontSize: '20px', fill: '#000' });
+		difficultyText.anchor.setTo(0.5, 0.5);
+		game.time.events.add(Phaser.Timer.SECOND * 5, difficultyTextDel, this);
 	}
-	DIFFICULTY_CHANGE = CHANGING;
-	DIFFICULTY++;
-	enemy_bullet_velocity[0] += 20;
-	enemy_bullet_velocity[1] += 35;
-	enemy_bullet_velocity[2] += 25;
-	enemy_bullet_velocity[3] += 20;
-	difficultyText = game.add.text(game.width/2, game.height/2, 'Difficulty: '+DIFFICULTY, { fontSize: '20px', fill: '#000' });
-	difficultyText.anchor.setTo(0.5, 0.5);
-	game.time.events.add(Phaser.Timer.SECOND * 5, difficultyTextDel, this);
 }
 
 function difficultyTextDel(){
@@ -728,13 +731,17 @@ function spawn_enemy() {
 }
 
 function spawn_boss() {
-	if( !player.alive )
+	if( !player.alive )	{
+		bossSpawned = true;
 		return;
-	if(bosses.countDead() > 0){
-		var boss = bosses.getFirstExists(false);
+	}
+	if(bosses.countDead() === MAX_BOSS){
+		//var boss = bosses.getFirstExists(false);
+		var boss = bosses.getFirstDead();
 		boss.reset( game.width / 2, 0, BOSS_HEALTH);
 		boss.body.velocity.y = BOSS_SPEED;
 		boss.bossNextFire = 0;
+		bossSpawned = true;
 	}
 }
 
@@ -826,7 +833,7 @@ function plane_attack() {
 function boss_attack() {
 	bosses.forEachAlive(function (boss){
 		if (game.time.now > boss.bossNextFire && enemyBullets[1].countDead() > 0){ //bossbullet
-			boss.bossNextFire = game.time.now + game.rnd.integerInRange(5000, 10000);
+			boss.bossNextFire = game.time.now + game.rnd.integerInRange(500, 1000);
 			var boss_bullet = enemyBullets[1].getFirstDead();
 			boss_bullet.reset(boss.x, boss.y + boss.height/2);
 			boss_bullet.body.velocity.y = enemy_bullet_velocity[PLANE_SMALL] * 3;
@@ -970,7 +977,7 @@ function playerHitByBullet(player, bullet) {
 		player.shield.kill();
 		if(FireballsExist === true)
 			resetFireballs();
-		
+
 		if(multiplePlayer){
 			socket.emit('vibrate1', 'die');
 			gameOver1();
@@ -1031,13 +1038,13 @@ function superPlayer(){
 // When got a colorful box, the player can become undead and kill the enemies (except turrets) with bumping
 	if(playerSuper === true){
 		game.time.events.remove(superEvent);
-	} else{	
+	} else{
 		tmptint = player.tint;
 		player.alpha = 1;
 		tweenPlayer.stop();
 		playerSuper = true;
 		playerSpawnUndead = false;
-		var startTime = Date.now();	
+		var startTime = Date.now();
 		for(var i = 0; i < 6; i++){
 			superTween[i] = game.add.tween(player).to({ tint: tints[i] }, 200, Phaser.Easing.Linear.None, false, 0, 1, false);
 		}
