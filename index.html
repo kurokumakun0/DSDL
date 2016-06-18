@@ -25,7 +25,7 @@ function preload() {
 	game.load.image('sky', '/assets/seatiles.png');
 	game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');game.load.image('bullet2', '/assets/shump_assets/player_bullet_1.png');
 	game.load.image('ray', '/assets/ray2.png');game.load.image('ray2', '/assets/ray2.png');
-	game.load.image('player', '/assets/THSR.png');	game.load.image('player2', '/assets/THSR.png');
+	game.load.image('player', '/assets/THSR.png');	game.load.image('player2', '/assets/N700A.png');
 	game.load.image('enemy1', '/assets/EMU800.png');
 	game.load.image('enemy2', '/assets/EMU700.png');
 	game.load.image('enemy3', '/assets/shump_assets/mob_flagship_1.png');
@@ -218,7 +218,8 @@ function update() {
 					enemy_bullet_velocity[1] += 35;
 					enemy_bullet_velocity[2] += 25;
 					enemy_bullet_velocity[3] += 20;
-					difficultyText = game.add.text(game.width/2, game.height/2, 'Difficulty: '+DIFFICULTY, { fontSize: '20px', fill: '#000' });
+					//difficultyText = game.add.text(game.width/2, game.height/2, 'Difficulty: '+DIFFICULTY, { fontSize: '20px', fill: '#000' });
+					difficultyText = game.add.bitmapText(game.width/2, game.height/2, 'minecraftia', 'Difficulty: '+DIFFICULTY);
 					difficultyText.anchor.setTo(0.5, 0.5);
 					game.time.events.add(Phaser.Timer.SECOND * 5, difficultyTextDel, this);
 					levelup_loop = game.time.events.loop(Phaser.Timer.SECOND * LEVELUP_TIME, difficultyUP, this);
@@ -288,18 +289,17 @@ function update() {
 			}
 		}
 		game.physics.arcade.overlap(player, boxes, PlayerVsBox, null, this); // Player vs Boxes
-	} else {
-		// animate gameover Text to center
+	} else if(!multiplePlayer){
+		// animate gameover Text to -center- bottom (don't mix with scoreBoardText)
 		if( gameOverText != null && gameOverText.alive )	{
-			if( gameOverText.y < game.height/2 )
-				gameOverText.y += 2*background_movement;
+
+			if( gameOverText.y < game.height-20 )
+			 	gameOverText.y += 2*background_movement;
 		}
 	}
 	//==================multiplePlayer=================================================================================================
 	if(state === INGAME && (player.alive || player2.alive) && multiplePlayer){
-
 		updateText();
-
 		if(DIFFICULTY_CHANGE === NOCHANGE){
 			spawn_enemy();
 			plane_attack();
@@ -436,11 +436,17 @@ function listenSocket(){
 			resetMenu();
 			player1Die = false;
 			player2Die = false;
+			setupPlayer(false);	setupPlayer2(false);
+			player.reset(game.width / 3, game.height - 50);
+			weaponLevel = 0;	weaponLevel2 = 0;
+			score = 0;			score2 = 0;
+			resetPlayerLives();	resetPlayerLives2();
+			gameOverText.kill();
 		}
 	});
 	socket.on('shoot1', function(data) {
 		if(state === STARTGAME && multiReady){
-			game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
+			//game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
 			levelup_loop = game.time.events.loop(Phaser.Timer.SECOND * LEVELUP_TIME, difficultyUP, this);
 			state = INGAME;
 			setupFireRate();
@@ -457,11 +463,17 @@ function listenSocket(){
 			resetMenu();
 			player1Die = false;
 			player2Die = false;
+			setupPlayer(false);	setupPlayer2(false);
+			player.reset(game.width / 3, game.height - 50);
+			weaponLevel = 0;	weaponLevel2 = 0;
+			score = 0;			score2 = 0;
+			resetPlayerLives();	resetPlayerLives2();
+			gameOverText.kill();
 		}
 	});
 	socket.on('shoot2', function(data) {
 		if(state === STARTGAME && multiReady){
-			game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
+			//game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
 			levelup_loop = game.time.events.loop(Phaser.Timer.SECOND * LEVELUP_TIME, difficultyUP, this);
 			state = INGAME;
 			setupFireRate();
@@ -497,7 +509,8 @@ function difficultyUP(){
 		enemy_bullet_velocity[1] += 35;
 		enemy_bullet_velocity[2] += 25;
 		enemy_bullet_velocity[3] += 20;
-		difficultyText = game.add.text(game.width/2, game.height/2, 'Difficulty: '+DIFFICULTY, { fontSize: '20px', fill: '#000' });
+		//difficultyText = game.add.text(game.width/2, game.height/2, 'Difficulty: '+DIFFICULTY, { fontSize: '20px', fill: '#000' });
+		difficultyText = game.add.bitmapText(game.width/2, game.height/2, 'minecraftia', 'Difficulty: '+DIFFICULTY);
 		difficultyText.anchor.setTo(0.5, 0.5);
 		game.time.events.add(Phaser.Timer.SECOND * 5, difficultyTextDel, this);
 	}
@@ -1020,7 +1033,11 @@ function playerHit(player, enemy) {
 			socket.emit('vibrate', 'hit');
 		}
 		setPlayerSpawnTimeUndead();
-		player.reset(game.width / 2, game.height - 50);
+		if(multiplePlayer){
+			player.reset(game.width / 3, game.height - 50);
+		}else{
+			player.reset(game.width / 2, game.height - 50);
+		}
 	} else {
 		player.kill();
 		player.shield.kill();
@@ -1058,7 +1075,11 @@ function playerHitByBullet(player, bullet) {
 			socket.emit('vibrate', 'hit');
 		}
 		setPlayerSpawnTimeUndead();
-		player.reset(game.width / 2, game.height - 50);
+		if(multiplePlayer){
+			player.reset(game.width / 3, game.height - 50);
+		}else{
+			player.reset(game.width / 2, game.height - 50);
+		}
 	} else {
 		player.kill();
 		player.shield.kill();
