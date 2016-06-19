@@ -373,11 +373,11 @@ function listenSocket(){
 			weaponLevel = 0;
 			score = 0;
 			resetPlayerLives();
-			if( gameOverText != null && gameOverText.alive )
-				gameOverText.kill();
-			if( scoreBoardText != null && scoreBoardText.alive )
-				scoreBoardText.kill();
 		}
+		if( gameOverText != null && gameOverText.alive )
+			gameOverText.kill();
+		if( scoreBoardText != null && scoreBoardText.alive )
+			scoreBoardText.kill();
 		resetMenu();
 	});
 	socket.on('shoot', function(data) {
@@ -387,6 +387,8 @@ function listenSocket(){
 			state = INGAME;
 			setupFireRate();
 			gamestartMenu.kill();
+			if( scoreBoardText != null && scoreBoardText.alive )
+				scoreBoardText.kill();
 			setPlayerSpawnTimeUndead(); // game start
 		} else{
 			fire();
