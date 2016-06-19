@@ -68,7 +68,7 @@ const LEVELUP_TIME = 25;
 var DIFFICULTY = 1;
 var DIFFICULTY_CHANGE=NOCHANGE;
 var difficultyText;
-var levelup_loop, levelupLoopRemove;;
+var levelup_loop, levelupLoopRemove;
 var score = 0, score2 = 0;
 var scoreText, scoreText2;
 var scoreBoardText;
@@ -213,7 +213,6 @@ function update() {
 					DIFFICULTY++;
 					bossSpawned = false;
 					ENEMYS_KILLED = false;
-					levelupLoopRemove = false;
 					enemy_bullet_velocity[0] += 20;
 					enemy_bullet_velocity[1] += 35;
 					enemy_bullet_velocity[2] += 25;
@@ -222,6 +221,7 @@ function update() {
 					difficultyText = game.add.bitmapText(game.width/2, game.height/2, 'minecraftia', 'Difficulty: '+DIFFICULTY);
 					difficultyText.anchor.setTo(0.5, 0.5);
 					game.time.events.add(Phaser.Timer.SECOND * 5, difficultyTextDel, this);
+					levelupLoopRemove = false;
 					levelup_loop = game.time.events.loop(Phaser.Timer.SECOND * LEVELUP_TIME, difficultyUP, this);
 				}
 				boss_attack();
@@ -383,6 +383,7 @@ function listenSocket(){
 	socket.on('shoot', function(data) {
 		if(state === STARTGAME){
 			game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
+			levelupLoopRemove = false;
 			levelup_loop = game.time.events.loop(Phaser.Timer.SECOND * LEVELUP_TIME, difficultyUP, this);
 			state = INGAME;
 			setupFireRate();
@@ -449,6 +450,7 @@ function listenSocket(){
 	socket.on('shoot1', function(data) {
 		if(state === STARTGAME && multiReady){
 			//game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
+			levelupLoopRemove = false;
 			levelup_loop = game.time.events.loop(Phaser.Timer.SECOND * LEVELUP_TIME, difficultyUP, this);
 			state = INGAME;
 			setupFireRate();
@@ -476,6 +478,7 @@ function listenSocket(){
 	socket.on('shoot2', function(data) {
 		if(state === STARTGAME && multiReady){
 			//game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
+			levelupLoopRemove = false;
 			levelup_loop = game.time.events.loop(Phaser.Timer.SECOND * LEVELUP_TIME, difficultyUP, this);
 			state = INGAME;
 			setupFireRate();
@@ -1409,6 +1412,8 @@ function explode(sprite) {
 function gameOver(){
 	state = ENDGAME;
 	DIFFICULTY = 1;
+	DIFFICULTY_CHANGE=NOCHANGE;
+	levelupLoopRemove = true;
 	game.time.events.remove(levelup_loop);
 	if( difficultyText != null )
 		difficultyTextDel();
@@ -1437,6 +1442,8 @@ function gameOver1(){
 		state = ENDGAME;
 		launchult();
 		DIFFICULTY = 1;
+		DIFFICULTY_CHANGE=NOCHANGE;
+		levelupLoopRemove = true;
 		game.time.events.remove(levelup_loop);
 		if(score > score2){
 			gameOverText = game.add.bitmapText(game.width/2, game.height/2, 'minecraftia', 'Player1 Wins');
@@ -1457,6 +1464,8 @@ function gameOver2(){
 		state = ENDGAME;
 		launchult();
 		DIFFICULTY = 1;
+		DIFFICULTY_CHANGE=NOCHANGE;
+		levelupLoopRemove = true;
 		game.time.events.remove(levelup_loop);
 		if(score > score2){
 			gameOverText = game.add.bitmapText(game.width/2, game.height/2, 'minecraftia', 'Player1 Wins');
