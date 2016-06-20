@@ -16,7 +16,7 @@
 <script type="text/javascript">
 
 var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '', { preload: preload, create: create, update: update });
-var socket = io();
+var socket = io({'sync disconnect on unload': true });
 var multiplePlayer = false;
 var multiReady = false;
 
@@ -133,6 +133,7 @@ const yellow = 0, orange = 1, green = 2, chocolate = 3, blue = 4, dark_blue = 5,
 var boxes;
 var nextBox = 0;
 var explosionPool;
+var magicPN, magicText;
 
 function create() {
 	setupBackground();
@@ -153,7 +154,7 @@ function create() {
 	setupMenu();
 	scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '20px', fill: '#000' });
 	ultText = game.add.text(65, 50, 'ULT state: restore', { fontSize: '20px', fill: '#000' });
-	listenSocket();
+	generateMagicNumber();
 }
 
 function update() {
@@ -355,18 +356,29 @@ function update() {
 	//===================================================================================================================================
 }
 
+function generateMagicNumber()	{
+	socket.once('getMagic', function(hash)	{
+		magicPN = String(hash);
+		magicText = game.add.bitmapText(game.width/2, 32, 'minecraftia', magicPN);
+		magicText.anchor.setTo(0.5, 0.5);
+
+		listenSocket();
+	});
+	socket.emit('reqMagic', null);
+}
+
 function listenSocket(){
-	socket.on('setX', function(data) {
+	socket.on('setX'+magicPN, function(data) {
 		newX = parseFloat(data);
 	});
-	socket.on('setY', function(data) {
+	socket.on('setY'+magicPN, function(data) {
 		newY = parseFloat(data);
 	});
-	socket.on('ultra', function(data) {
+	socket.on('ultra'+magicPN, function(data) {
 		if(player.alive)
 			launchult();
 	});
-	socket.on('start', function(data) {
+	socket.on('start'+magicPN, function(data) {
 		state = STARTGAME;
 		if( !player.alive )	{
 			setupPlayer(false);
@@ -380,7 +392,7 @@ function listenSocket(){
 			scoreBoardText.kill();
 		resetMenu();
 	});
-	socket.on('shoot', function(data) {
+	socket.on('shoot'+magicPN, function(data) {
 		if(state === STARTGAME){
 			game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
 			levelupLoopRemove = false;
@@ -395,16 +407,16 @@ function listenSocket(){
 			fire();
 		}
 	});
-	socket.on('switch_weapon', function(msg){
+	socket.on('switch_weapon'+magicPN, function(msg){
 		 weaponMode = msg;
 	});
-	socket.on('scoreBoard', function(data)	{
+	socket.on('scoreBoard'+magicPN, function(data)	{
 		console.log('data = ' + data);
 		scoreBoardText = game.add.bitmapText(game.width/2, game.height/2 + 32, 'minecraftia', data);
 		scoreBoardText.anchor.setTo(0.5, 0.5);
 	});
 	//==========multiplePlayer==================================
-	socket.on('players', function(msg) {
+	socket.on('players'+magicPN, function(msg) {
 		if(msg == '2'){
 			multiplePlayer = true;
 			ultsign_g.kill();
@@ -421,19 +433,19 @@ function listenSocket(){
 			multiReady = true;
 		}
 	});
-	socket.on('setX1', function(data) {
+	socket.on('setX1'+magicPN, function(data) {
 		newX = parseFloat(data);
 	});
-	socket.on('setY1', function(data) {
+	socket.on('setY1'+magicPN, function(data) {
 		newY = parseFloat(data);
 	});
-	socket.on('setX2', function(data) {
+	socket.on('setX2'+magicPN, function(data) {
 		newX2 = parseFloat(data);
 	});
-	socket.on('setY2', function(data) {
+	socket.on('setY2'+magicPN, function(data) {
 		newY2 = parseFloat(data);
 	});
-	socket.on('start1', function(data) {
+	socket.on('start1'+magicPN, function(data) {
 		state = STARTGAME;
 		if(player1Die && player2Die){
 			resetMenu();
@@ -447,7 +459,7 @@ function listenSocket(){
 			gameOverText.kill();
 		}
 	});
-	socket.on('shoot1', function(data) {
+	socket.on('shoot1'+magicPN, function(data) {
 		if(state === STARTGAME && multiReady){
 			//game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
 			levelupLoopRemove = false;
@@ -461,7 +473,7 @@ function listenSocket(){
 			fire();
 		}
 	});
-	socket.on('start2', function(data) {
+	socket.on('start2'+magicPN, function(data) {
 		state = STARTGAME;
 		if(player1Die && player2Die){
 			resetMenu();
@@ -475,7 +487,7 @@ function listenSocket(){
 			gameOverText.kill();
 		}
 	});
-	socket.on('shoot2', function(data) {
+	socket.on('shoot2'+magicPN, function(data) {
 		if(state === STARTGAME && multiReady){
 			//game.time.events.add(Phaser.Timer.SECOND * ULT_FILL_TIME, fillult, this);
 			levelupLoopRemove = false;
@@ -628,7 +640,7 @@ function fillult(){
 	ult = FILLED;
 	ultsign = game.add.sprite(16, 36, 'ultsign');
 	ultText.fill = '#F00';
-	socket.emit('ULT', 'filled');
+	socket.emit('ULT'+magicPN, 'filled');
 }
 
 function launchult(){
@@ -992,9 +1004,9 @@ function playerVsBoss(player, boss)	{
 	if (life !== null) {
 		life.kill();
 		if(multiplePlayer){
-			socket.emit('vibrate1', 'hit');
+			socket.emit('vibrate1'+magicPN, 'hit');
 		}else{
-			socket.emit('vibrate', 'hit');
+			socket.emit('vibrate'+magicPN, 'hit');
 		}
 		setPlayerSpawnTimeUndead();
 		player.reset(game.width / 2, game.height - 50);
@@ -1033,9 +1045,9 @@ function playerHit(player, enemy) {
 	if (life !== null) {
 		life.kill();
 		if(multiplePlayer){
-			socket.emit('vibrate1', 'hit');
+			socket.emit('vibrate1'+magicPN, 'hit');
 		}else{
-			socket.emit('vibrate', 'hit');
+			socket.emit('vibrate'+magicPN, 'hit');
 		}
 		setPlayerSpawnTimeUndead();
 		if(multiplePlayer){
@@ -1049,10 +1061,10 @@ function playerHit(player, enemy) {
 		if(FireballsExist === true)
 			resetFireballs();
 		if(multiplePlayer){
-			socket.emit('vibrate1', 'die');
+			socket.emit('vibrate1'+magicPN, 'die');
 			gameOver1();
 		}else{
-			socket.emit('vibrate', 'die');
+			socket.emit('vibrate'+magicPN, 'die');
 			gameOver();
 			launchult();
 		}
@@ -1075,9 +1087,9 @@ function playerHitByBullet(player, bullet) {
 	if (life !== null) {
 		life.kill();
 		if(multiplePlayer){
-			socket.emit('vibrate1', 'hit');
+			socket.emit('vibrate1'+magicPN, 'hit');
 		}else{
-			socket.emit('vibrate', 'hit');
+			socket.emit('vibrate'+magicPN, 'hit');
 		}
 		setPlayerSpawnTimeUndead();
 		if(multiplePlayer){
@@ -1092,10 +1104,10 @@ function playerHitByBullet(player, bullet) {
 			resetFireballs();
 
 		if(multiplePlayer){
-			socket.emit('vibrate1', 'die');
+			socket.emit('vibrate1'+magicPN, 'die');
 			gameOver1();
 		}else{
-			socket.emit('vibrate', 'die');
+			socket.emit('vibrate'+magicPN, 'die');
 			gameOver();
 			launchult();
 		}
@@ -1229,7 +1241,7 @@ function playerHit2(player, enemy) {
 	var life = lives2.getFirstAlive();
 	if (life !== null) {
 		life.kill();
-		socket.emit('vibrate2', 'hit');
+		socket.emit('vibrate2'+magicPN, 'hit');
 		setPlayerSpawnTimeUndead2();
 		player2.reset(game.width * 2 / 3, game.height - 50);
 	} else {
@@ -1237,7 +1249,7 @@ function playerHit2(player, enemy) {
 		player2.shield.kill();
 		if(FireballsExist2 === true)
 			resetFireballs2();
-		socket.emit('vibrate2', 'die');
+		socket.emit('vibrate2'+magicPN, 'die');
 		gameOver2();
 		// clear all
 		launchult();
@@ -1259,7 +1271,7 @@ function playerHitByBullet2(player, bullet) {
 	var life = lives2.getFirstAlive();
 	if (life !== null) {
 		life.kill();
-		socket.emit('vibrate2', 'hit');
+		socket.emit('vibrate2'+magicPN, 'hit');
 		setPlayerSpawnTimeUndead2();
 		player2.reset(game.width * 2 / 3, game.height - 50);
 	} else {
@@ -1267,7 +1279,7 @@ function playerHitByBullet2(player, bullet) {
 		player2.shield.kill();
 		if(FireballsExist2 === true)
 			resetFireballs2();
-		socket.emit('vibrate2', 'die');
+		socket.emit('vibrate2'+magicPN, 'die');
 		gameOver2();
 		launchult();
 	}
@@ -1431,7 +1443,7 @@ function gameOver(){
 
 	// save to DB
 	var user = {name: "treetreeTest", score: parseInt(score), time: Date.now()};
-	socket.emit("data", user);
+	socket.emit("data"+magicPN, user);
 }
 
 //==================multiplePlayer========================
