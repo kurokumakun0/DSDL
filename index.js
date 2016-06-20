@@ -93,6 +93,7 @@ function addWebOwnSocket(socket, magic)   {
   //=====Web to Android
   socket.on('vibrate' + magic, function(msg){
      io.emit('connectOK'+magic, msg);
+	 console.log('vibrate' + magic + msg);
   });
   socket.on('ULT' + magic, function(msg){
      io.emit('connectOK'+magic, msg);
