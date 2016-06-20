@@ -114,7 +114,7 @@ function addWebOwnSocket(socket, magic)   {
 
   }
   socket.on('data' + magic, function(data){
-	 SaveToDB(data);
+	 SaveToDB(data, magic);
   });
   //=====
 }
@@ -231,7 +231,7 @@ firebaseDB.scoresRef.orderByChild("score").limitToLast(10).on("value", function(
 
 });
 
-function SaveToDB(data) {
+function SaveToDB(data, magic) {
   firebaseDB.updateScore({
     name: data.name,
     score: parseInt(data.score),
@@ -240,7 +240,7 @@ function SaveToDB(data) {
     if( err == null ) {
       // success
       // send scoreBoard string to web
-      io.emit("scoreBoard", scoreBoard);
+      io.emit("scoreBoard"+magic, scoreBoard);
     }
   });
   console.log('int save to db');
