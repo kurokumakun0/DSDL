@@ -440,8 +440,13 @@ function listenSocket() {
 	});
 	socket.on('scoreBoard'+magicPN, function(data)	{
 	
-		console.log('data = ' + data);
-		scoreBoardText = game.add.bitmapText(game.width/2, game.height/2 + 32, 'minecraftia', data);
+		//console.log('data = ' + data);
+		if( scoreBoardText != null )	{
+			scoreBoardText.reset(game.width/2, game.height/2 + 32);
+			scoreBoardText.setText(data);
+		}else{
+			scoreBoardText = game.add.bitmapText(game.width/2, game.height/2 + 32, 'minecraftia', data);	
+		}
 		scoreBoardText.anchor.setTo(0.5, 0.5);
 	});
 	
@@ -677,7 +682,11 @@ function fire2() { // player 2
 
 function fillult() {
 	ult = FILLED;
-	ultsign = game.add.sprite(16, 36, 'ultsign');
+	if( ultsign != null )	{
+		ultsign.reset(16, 36);
+	}else {
+		ultsign = game.add.sprite(16, 36, 'ultsign');	
+	}
 	ultText.fill = '#F00';
 	socket.emit('ULT'+magicPN, 'filled');
 }
@@ -1580,7 +1589,11 @@ function setupBackground() {
 function setupPlayer(isSetSpawnTimeUndead) {
 	isSetSpawnTimeUndead = typeof isSetSpawnTimeUndead !== 'undefined' ? isSetSpawnTimeUndead : true;
 
-	player = game.add.sprite(game.width / 2, game.height - 50, 'player');
+	if( player != null )	{
+		player.reset(game.width / 2, game.height - 50);
+	}else{
+		player = game.add.sprite(game.width / 2, game.height - 50, 'player');
+	}
 	game.physics.arcade.enable(player);
 	player.body.collideWorldBounds = true;
 	player.anchor.x = 0.5;

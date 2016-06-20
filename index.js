@@ -22,8 +22,8 @@ function random (howMany, chars) {
 	var rnd = crypto.randomBytes(howMany), value = new Array(howMany), len = chars.length;
 
 	for (var i = 0; i < howMany; i++) {
-		value[i] = chars[rnd[i] % len]
-	};
+		value[i] = chars[rnd[i] % len];
+	}
 
 	return value.join('');
 }
@@ -35,26 +35,27 @@ app.get('/', function(req, res){
 app.use("/assets", express.static(__dirname + '/assets'));
 
 io.on('connection', function(socket){
-	console.log('a user connected');
 
   // first time shake hand, magic number on web
   // mobile <=> server
-	socket.on('magic', function(magic) {
+	socket.once('magic', function(magic) {
 	console.log('magic = %s', String(magic));
 	if( Magics.indexOf(String(magic)) > -1 ) { // check magic number exists or not
 		io.emit('connectOK', 'OK');
 		socket.mobileMagic = String(magic);
 		addMobileOwnSocket(socket, String(magic));
+		console.log('a mobile user connected OK');
 	} else {
 		io.emit('connectOK', 'Failed');
+		console.log('a mobile user connected Failed');
 	}
 });
 
 socket.on('disconnect', function(){
-	console.log('user disconnected');
 
 	if( socket.mobileMagic != null ) {
-		var index = Magics.indexOf(socket.mobileMagic)
+	  console.log('Mobile user disconnected');
+		var index = Magics.indexOf(socket.mobileMagic);
 		if( index > -1 ){
 			player1status[index] = false;
 			player2status[index] = false;
@@ -63,6 +64,7 @@ socket.on('disconnect', function(){
 		}
 	}
 	if( socket.magic != null ) {
+	  console.log('Web client disconnected');
 		var id = Magics.indexOf(socket.magic);
 		Magics.splice(id, 1);
 	}
@@ -93,7 +95,7 @@ function addWebOwnSocket(socket, magic) {
 		io.emit('connectOK'+magic, msg);
 	});
 
-	var index = Magics.indexOf(magic)
+	var index = Magics.indexOf(magic);
 	if( index > -1 ){
 		socket.on('vibrate1' + magic, function(msg){
 			io.emit(player1uuid[index], msg);
@@ -164,7 +166,7 @@ function addMobileOwnSocket(socket, magic) {
 
 // android to server
 	socket.on('requestPlayer'+magic, function(msg){
-	var index = Magics.indexOf(String(magic))
+	var index = Magics.indexOf(String(magic));
 		if( index > -1 ){
 			if(player1status[index] == null && player2status[index] == null && player1uuid[index] == null && player2uuid[index] == null){
 				player1status[index] = false;
@@ -193,7 +195,7 @@ function addMobileOwnSocket(socket, magic) {
 		}
 	});
 	socket.on('stillConnect'+magic, function(msg){
-		var index = Magics.indexOf(String(magic))
+		var index = Magics.indexOf(String(magic));
 		if( index > -1 ){
 			if(msg == player1uuid[index]){
 				player1status[index] = true;
@@ -236,5 +238,5 @@ function SaveToDB(data, magic) {
 			io.emit("scoreBoard"+magic, scoreBoard); // send scoreBoard string to web
 		}
 	});
-	console.log('int save to db');
+	console.log(magic + 'save to db');
 }
