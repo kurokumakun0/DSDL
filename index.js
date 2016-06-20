@@ -11,10 +11,10 @@ app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
 var firebaseDB = require('./firebase.js');
 
-var player1status = false;
-var player1uuid;
-var player2status = false;
-var player2uuid;
+var player1status = new Array();
+var player1uuid = new Array();
+var player2status = new Array();
+var player2uuid = new Array();
 
 var Magics = new Array();
 
@@ -59,10 +59,13 @@ io.on('connection', function(socket){
 
   socket.on('disconnect', function(){
     console.log('user disconnected');
-  	player1status = false;
-  	player2status = false;
-  	io.emit(player1uuid, 'checkConnect');
-  	io.emit(player2uuid, 'checkConnect');
+	var index = Magics.indexOf(socket.magic)
+	if( index > -1 ){
+		player1status[index] = false;
+		player2status[index] = false;
+		io.emit(player1uuid[index], 'checkConnect');
+		io.emit(player2uuid[index], 'checkConnect');
+	}
     if( socket.magic != null )  {
       var id = Magics.indexOf(socket.magic);
       Magics.splice(id, 1);
@@ -82,36 +85,7 @@ io.on('connection', function(socket){
     addWebOwnSocket(socket, String(magic));
   });
 
-  //=====Android to server
-  socket.on('requestPlayer', function(msg){
-  	if(msg == player1uuid || msg == player2uuid){return;}
-  	if(!player1status){
-  		player1status = true;
-  		player1uuid = msg;
-  		io.emit(player1uuid, 'player1');
-  		//server to web
-  		io.emit('players', '2');
-  	}else if(!player2status){
-  		player2status = true;
-  		player2uuid = msg;
-  		io.emit(player2uuid, 'player2');
-  		io.emit(player1uuid, 'ready');
-  		io.emit(player2uuid, 'ready');
-  		//server to web
-  		io.emit('players', 'go');
-  	}else{
-  		io.emit(msg, 'full');
-  	}
-  });
-  socket.on('stillConnect', function(msg){
-  	if(msg == player1uuid){
-  		player1status = true;
-  	}
-  	if(msg == player2uuid){
-  		player2status = true;
-  	}
-  });
-  //=====
+  
 });
 
 function addWebOwnSocket(socket, magic)   {
@@ -187,6 +161,47 @@ function addMobileOwnSocket(socket, magic) {
   });
   socket.on('switch_weapon' + magic, function(msg){
      io.emit('switch_weapon'+magic, msg);
+  });
+  //=====
+  //=====Android to server
+  socket.on('requestPlayer'+magic, function(msg){
+	var index = Magics.indexOf(String(magic))
+	if( index > -1 ){
+		player1status[index] = false;
+		player2status[index] = false;
+		player1uuid[index] = '';
+		player2uuid[index] = '';
+		
+		if(msg == player1uuid[index] || msg == player2uuid[index]){return;}
+		if(!player1status[index]){
+			player1status[index] = true;
+			player1uuid[index] = msg;
+			io.emit(player1uuid[index], 'player1');
+			//server to web
+			io.emit('players' + magic, '2');
+		}else if(!player2status[index]){
+			player2status[index] = true;
+			player2uuid[index] = msg;
+			io.emit(player2uuid[index], 'player2');
+			io.emit(player1uuid[index], 'ready');
+			io.emit(player2uuid[index], 'ready');
+			//server to web
+			io.emit('players' + magic, 'go');
+		}else{
+			io.emit(msg, 'this room is full');
+		}
+	}
+  });
+  socket.on('stillConnect'+magic, function(msg){
+	var index = Magics.indexOf(String(magic))
+	if( index > -1 ){
+		if(msg == player1uuid[index]){
+			player1status[index] = true;
+		}
+		if(msg == player2uuid[index]){
+			player2status[index] = true;
+		}
+	}
   });
   //=====
 }
