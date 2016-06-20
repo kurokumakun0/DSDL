@@ -35,7 +35,8 @@ function preload() {
 	game.load.image('ultsign', '/assets/50ult.png');
 	game.load.image('ultsign_g', '/assets/50ult_gray.png');
 	game.load.image('boss', '/assets/ufo.png');
-	game.load.image('boss_bullet', '/assets/energy_bullet.png');
+	game.load.image('boss_bullet0', '/assets/energy_bullet.png');
+	game.load.image('boss_bullet1', 'assets/ray3.png');
 	game.load.spritesheet('bonus_cube', 'assets/shump_assets/cubes.png', 24, 24);
 	game.load.spritesheet('enemy0', '/assets/shump_assets/mob_turret_1.png', 24, 24);
 	game.load.spritesheet('explosion', 'assets/shump_assets/explosion_1.png', 32, 32);
@@ -123,7 +124,7 @@ const BOSS_STAGE_FREQ = 2;
 const BOSS_HEALTH = 500, BOSS_SPEED = 5;
 var bossSpawned = false, ENEMYS_KILLED = false;
 var bosses;
-var bossBullet;
+var bossBullet = new Array();
 var bossBullet_num = 1000;
 
 //Others
@@ -260,7 +261,9 @@ function update() {
 			game.physics.arcade.overlap(rocketPool, bosses, enemyHit, null, this); // Rockets vs Enemys
 
 			//for(var i = 0; i < ENEMY_BULLET_KINDS; i++){ // Player vs Enemy Bullets
-				game.physics.arcade.overlap(player, bossBullet, playerHitByBullet, null, this);
+			for( var i = 0 ; i < 2 ; i ++ )	{
+				game.physics.arcade.overlap(player, bossBullet[i], playerHitByBullet, null, this);
+			}
 				//game.physics.arcade.overlap(player, boseBullets, playerHitByBullet, null, this);
 			//}
 		} else {
@@ -887,34 +890,74 @@ function plane_attack() {
 
 function boss_attack() {
 	bosses.forEachAlive(function (boss){
-		if (game.time.now > boss.bossNextFire && bossBullet.countDead() > 0){ //bossbullet
+		if (game.time.now > boss.bossNextFire){ //bossbullet
 			boss.bossNextFire = game.time.now + game.rnd.integerInRange(5000, 6000);
-			// left canon
-			for( var i = 0 ; i < 19 ; i ++ )	{
-				var boss_bullet = bossBullet.getFirstDead();
-				boss_bullet.reset(boss.x - boss.width*7/16, boss.y + boss.height/8);
-				game.physics.arcade.velocityFromAngle( (i*20) % 185 + 40, enemy_bullet_velocity[PLANE_SMALL], boss_bullet.body.velocity);
+
+			var cur_boss_bullet_type = game.rnd.integerInRange(0, 1);
+			var cur_boss_bullet = bossBullet[parseInt(cur_boss_bullet_type)];
+
+			switch( cur_boss_bullet_type )	{
+				case 0:	// green round bullet
+					FullScreenAttack(boss, cur_boss_bullet);
+					break;
+				case 1:
+					NormalAttack(boss, cur_boss_bullet);
+					break;
 			}
-			// mid-left canon
-			for( var i = 0 ; i < 19 ; i ++ )	{
-				var boss_bullet = bossBullet.getFirstDead();
-				boss_bullet.reset(boss.x - boss.width*3/16, boss.y + boss.height/4);
-				game.physics.arcade.velocityFromAngle( (i*20) % 185, enemy_bullet_velocity[PLANE_SMALL], boss_bullet.body.velocity);
-			}
-			// mid-right canon
-			for( var i = 0 ; i < 19 ; i ++ )	{
-				var boss_bullet = bossBullet.getFirstDead();
-				boss_bullet.reset(boss.x + boss.width/8, boss.y + boss.height/4);
-				game.physics.arcade.velocityFromAngle( (i*20) % 185, enemy_bullet_velocity[PLANE_SMALL], boss_bullet.body.velocity);
-			}
-			// right canon
-			for( var i = 0 ; i < 19 ; i ++ )	{
-				var boss_bullet = bossBullet.getFirstDead();
-				boss_bullet.reset(boss.x + boss.width*3/8, boss.y + boss.height/8);
-				game.physics.arcade.velocityFromAngle( (i*20) % 185 - 40, enemy_bullet_velocity[PLANE_SMALL], boss_bullet.body.velocity);
-			}
+
+
 		}
 	}, this);
+}
+
+function FullScreenAttack(boss, bullets)	{
+	// left canon
+	for( var i = 0 ; i < 19 ; i ++ )	{
+		var boss_bullet = bullets.getFirstDead();
+		boss_bullet.reset(boss.x - boss.width*7/16, boss.y + boss.height/8);
+		game.physics.arcade.velocityFromAngle( (i*20) % 185 + 40, enemy_bullet_velocity[PLANE_SMALL], boss_bullet.body.velocity);
+	}
+	// mid-left canon
+	for( var i = 0 ; i < 19 ; i ++ )	{
+		var boss_bullet = bullets.getFirstDead();
+		boss_bullet.reset(boss.x - boss.width*3/16, boss.y + boss.height/4);
+		game.physics.arcade.velocityFromAngle( (i*20) % 185, enemy_bullet_velocity[PLANE_SMALL], boss_bullet.body.velocity);
+	}
+	// mid-right canon
+	for( var i = 0 ; i < 19 ; i ++ )	{
+		var boss_bullet = bullets.getFirstDead();
+		boss_bullet.reset(boss.x + boss.width/8, boss.y + boss.height/4);
+		game.physics.arcade.velocityFromAngle( (i*20) % 185, enemy_bullet_velocity[PLANE_SMALL], boss_bullet.body.velocity);
+	}
+	// right canon
+	for( var i = 0 ; i < 19 ; i ++ )	{
+		var boss_bullet = bullets.getFirstDead();
+		boss_bullet.reset(boss.x + boss.width*3/8, boss.y + boss.height/8);
+		game.physics.arcade.velocityFromAngle( (i*20) % 185 - 40, enemy_bullet_velocity[PLANE_SMALL], boss_bullet.body.velocity);
+	}
+}
+
+function NormalAttack(boss, bullets)	{
+	// left canon
+	var boss_bullet = bullets.getFirstDead();
+	boss_bullet.reset(boss.x - boss.width*7/16, boss.y + boss.height/8);
+	boss_bullet.body.velocity.y = enemy_bullet_velocity[PLANE_MEDIUM];
+
+	// mid-left canon
+	boss_bullet = bullets.getFirstDead();
+	boss_bullet.reset(boss.x - boss.width*3/16, boss.y + boss.height/4);
+	boss_bullet.body.velocity.y = enemy_bullet_velocity[PLANE_MEDIUM];
+
+	// mid-right canon
+	boss_bullet = bullets.getFirstDead();
+	boss_bullet.reset(boss.x + boss.width/8, boss.y + boss.height/4);
+	boss_bullet.body.velocity.y = enemy_bullet_velocity[PLANE_MEDIUM];
+
+	// right canon
+	boss_bullet = bullets.getFirstDead();
+	boss_bullet.reset(boss.x + boss.width*3/8, boss.y + boss.height/8);
+	boss_bullet.body.velocity.y = enemy_bullet_velocity[PLANE_MEDIUM];
+
 }
 
 function createRocket()	{
@@ -1711,12 +1754,14 @@ function setupEnemyBullets(){
 		enemyBullets[i].setAll('scale.y', 1.5);
 	}
 
-	bossBullet = game.add.group();
-	bossBullet.enableBody = true;
-	bossBullet.physicsBodyType = Phaser.Physics.ARCADE;
-	bossBullet.createMultiple(bossBullet_num, 'boss_bullet' );
-	bossBullet.setAll('checkWorldBounds', true);
-	bossBullet.setAll('outOfBoundsKill', true);
+	for( var i = 0 ; i < 2 ; i ++ )	{
+		bossBullet[i] = game.add.group();
+		bossBullet[i].enableBody = true;
+		bossBullet[i].physicsBodyType = Phaser.Physics.ARCADE;
+		bossBullet[i].createMultiple(bossBullet_num, 'boss_bullet' + i );
+		bossBullet[i].setAll('checkWorldBounds', true);
+		bossBullet[i].setAll('outOfBoundsKill', true);
+	}
 }
 
 function setupPlayerLives(){
