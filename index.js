@@ -82,27 +82,6 @@ io.on('connection', function(socket){
     addWebOwnSocket(socket, String(magic));
   });
 
-  //=====Android to server
-  socket.on('requestPlayer', function(msg){
-  	if(msg == player1uuid || msg == player2uuid){return;}
-  	if(!player1status){
-  		player1status = true;
-  		player1uuid = msg;
-  		io.emit(player1uuid, 'player1');
-  		//server to web
-  		io.emit('players', '2');
-  	}else if(!player2status){
-  		player2status = true;
-  		player2uuid = msg;
-  		io.emit(player2uuid, 'player2');
-  		io.emit(player1uuid, 'ready');
-  		io.emit(player2uuid, 'ready');
-  		//server to web
-  		io.emit('players', 'go');
-  	}else{
-  		io.emit(msg, 'full');
-  	}
-  });
   socket.on('stillConnect', function(msg){
   	if(msg == player1uuid){
   		player1status = true;
@@ -189,6 +168,31 @@ function addMobileOwnSocket(socket, magic) {
      io.emit('switch_weapon'+magic, msg);
   });
   //=====
+
+  //=====Android to server
+  socket.on('requestPlayer' + magic, function(msg){
+  	if(msg == player1uuid || msg == player2uuid){return;}
+  	if(!player1status){
+  		player1status = true;
+  		player1uuid = msg;
+  		io.emit(player1uuid, 'player1');
+  		//server to web
+  		io.emit('players'+magic, '2');
+  	}else if(!player2status){
+  		player2status = true;
+  		player2uuid = msg;
+  		io.emit(player2uuid, 'player2');
+  		io.emit(player1uuid, 'ready');
+  		io.emit(player2uuid, 'ready');
+  		//server to web
+  		io.emit('players'+magic, 'go');
+  	}else{
+      // return to the connected mobile socket
+  		io.emit(msg, 'full');
+  	}
+  });
+
+  //=======================
 }
 
 http.listen(process.env.PORT || 3000, function(){
