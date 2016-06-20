@@ -59,7 +59,7 @@ io.on('connection', function(socket){
 
   socket.on('disconnect', function(){
     console.log('user disconnected');
-	var index = Magics.indexOf(socket.magic)
+	var index = Magics.indexOf(socket.mobileMagic)
 	if( index > -1 ){
 		player1status[index] = false;
 		player2status[index] = false;
@@ -95,16 +95,16 @@ function addWebOwnSocket(socket, magic)   {
      io.emit('connectOK'+magic, msg);
   });
   socket.on('vibrate1' + magic, function(msg){
-     io.emit(player1uuid, msg);
+     io.emit(player1uuid[index], msg);
   });
   socket.on('ULT1' + magic, function(msg){
-     io.emit(player1uuid, msg);
+     io.emit(player1uuid[index], msg);
   });
   socket.on('vibrate2' + magic, function(msg){
-     io.emit(player2uuid, msg);
+     io.emit(player2uuid[index], msg);
   });
   socket.on('ULT2' + magic, function(msg){
-     io.emit(player2uuid, msg);
+     io.emit(player2uuid[index], msg);
   });
   socket.on('data' + magic, function(data){
      SaveToDB(data);
