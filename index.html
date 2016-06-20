@@ -162,7 +162,7 @@ function create() {
 	menumusic = game.add.audio('menuBGM');
 	gamemusic = game.add.audio('gameBGM');
 	explodeSFX = game.add.audio('explodeSFX');
-	menumusic.play();
+	menumusic.loopFull();
 	generateMagicNumber();
 }
 
@@ -402,8 +402,8 @@ function listenSocket(){
 		if( scoreBoardText != null && scoreBoardText.alive )
 			scoreBoardText.kill();
 		resetMenu();
-		gamemusic.pause();
-		menumusic.resume();
+		gamemusic.stop();
+		menumusic.loopFull();
 	});
 	socket.on('shoot'+magicPN, function(data) {
 		if(state === STARTGAME){
@@ -416,8 +416,8 @@ function listenSocket(){
 			if( scoreBoardText != null && scoreBoardText.alive )
 				scoreBoardText.kill();
 			setPlayerSpawnTimeUndead(); // game start
-			menumusic.pause();
-			gamemusic.play();
+			menumusic.stop();
+			gamemusic.loopFull();
 		} else{
 			fire();
 		}
@@ -472,8 +472,8 @@ function listenSocket(){
 			score = 0;			score2 = 0;
 			resetPlayerLives();	resetPlayerLives2();
 			gameOverText.kill();
-			gamemusic.pause();
-			menumusic.resume();
+			gamemusic.stop();
+			menumusic.loopFull();
 		}
 	});
 	socket.on('shoot1'+magicPN, function(data) {
@@ -486,8 +486,8 @@ function listenSocket(){
 			gamestartMenu.kill();
 			setPlayerSpawnTimeUndead();
 			setPlayerSpawnTimeUndead2();// game start
-			menumusic.pause();
-			gamemusic.play();
+			menumusic.stop();
+			gamemusic.loopFull();
 		} else{
 			fire();
 		}
@@ -504,8 +504,8 @@ function listenSocket(){
 			score = 0;			score2 = 0;
 			resetPlayerLives();	resetPlayerLives2();
 			gameOverText.kill();
-			gamemusic.pause();
-			menumusic.resume();
+			gamemusic.stop();
+			menumusic.loopFull();
 		}
 	});
 	socket.on('shoot2'+magicPN, function(data) {
@@ -518,8 +518,8 @@ function listenSocket(){
 			gamestartMenu.kill();
 			setPlayerSpawnTimeUndead();
 			setPlayerSpawnTimeUndead2();// game start
-			menumusic.pause();
-			gamemusic.play();
+			menumusic.stop();
+			gamemusic.loopFull();
 		} else{
 			fire2();
 		}
