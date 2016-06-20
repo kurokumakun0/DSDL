@@ -217,6 +217,10 @@ http.listen(process.env.PORT || 3000, function(){
   console.log('listening on *: %d', process.env.PORT);
 });
 
+http.listen('error', function(err)  {
+  console.log('error = ' + err);
+});
+
 var scoreBoard;
 
 firebaseDB.scoresRef.orderByChild("score").limitToLast(10).on("value", function(snapshot) {
