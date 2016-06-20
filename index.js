@@ -94,20 +94,24 @@ function addWebOwnSocket(socket, magic)   {
   socket.on('ULT' + magic, function(msg){
      io.emit('connectOK'+magic, msg);
   });
-  socket.on('vibrate1' + magic, function(msg){
-     io.emit(player1uuid[index], msg);
-  });
-  socket.on('ULT1' + magic, function(msg){
-     io.emit(player1uuid[index], msg);
-  });
-  socket.on('vibrate2' + magic, function(msg){
-     io.emit(player2uuid[index], msg);
-  });
-  socket.on('ULT2' + magic, function(msg){
-     io.emit(player2uuid[index], msg);
-  });
+  var index = Magics.indexOf(magic)
+	if( index > -1 ){
+	  socket.on('vibrate1' + magic, function(msg){
+		 io.emit(player1uuid[index], msg);
+	  });
+	  socket.on('ULT1' + magic, function(msg){
+		 io.emit(player1uuid[index], msg);
+	  });
+	  socket.on('vibrate2' + magic, function(msg){
+		 io.emit(player2uuid[index], msg);
+	  });
+	  socket.on('ULT2' + magic, function(msg){
+		 io.emit(player2uuid[index], msg);
+	  });
+
+  }
   socket.on('data' + magic, function(data){
-     SaveToDB(data);
+	 SaveToDB(data);
   });
   //=====
 }
@@ -188,7 +192,7 @@ function addMobileOwnSocket(socket, magic) {
 			//server to web
 			io.emit('players' + magic, 'go');
 		}else{
-			io.emit(msg, 'this room is full');
+			io.emit(msg, 'full');
 		}
 	}
   });
