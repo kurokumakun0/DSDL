@@ -1097,10 +1097,10 @@ function playerVsBoss(player, boss)	{
 		if(FireballsExist === true)
 			resetFireballs();
 		if(multiplePlayer){
-			socket.emit('vibrate1', 'die');
+			socket.emit('vibrate1'+magicPN, 'die');
 			gameOver1();
 		}else{
-			socket.emit('vibrate', 'die');
+			socket.emit('vibrate'+magicPN, 'die');
 			gameOver();
 			killAllEnemy();
 			killAllEnemyBullet();

@@ -209,8 +209,9 @@ http.listen(process.env.PORT || 3000, function(){
 	console.log('listening on *: %d', process.env.PORT);
 });
 
-http.listen('error', function(err)  {
-  console.log('error = ' + err);
+app.use(function(err, req, res, next) {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
 });
 
 var scoreBoard;
