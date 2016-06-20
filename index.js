@@ -59,13 +59,16 @@ io.on('connection', function(socket){
 
   socket.on('disconnect', function(){
     console.log('user disconnected');
-	var index = Magics.indexOf(socket.mobileMagic)
-	if( index > -1 ){
-		player1status[index] = false;
-		player2status[index] = false;
-		io.emit(player1uuid[index], 'checkConnect');
-		io.emit(player2uuid[index], 'checkConnect');
-	}
+
+    if( socket.mobileMagic != null )  {
+      var index = Magics.indexOf(socket.mobileMagic)
+      if( index > -1 ){
+        player1status[index] = false;
+        player2status[index] = false;
+        io.emit(player1uuid[index], 'checkConnect');
+        io.emit(player2uuid[index], 'checkConnect');
+      }
+    }
     if( socket.magic != null )  {
       var id = Magics.indexOf(socket.magic);
       Magics.splice(id, 1);
@@ -175,7 +178,6 @@ function addMobileOwnSocket(socket, magic) {
 			player1uuid[index] = '';
 			player2uuid[index] = '';
 		}
-		
 		if(msg == player1uuid[index] || msg == player2uuid[index]){return;}
 		if(!player1status[index]){
 			player1status[index] = true;
