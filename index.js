@@ -84,8 +84,6 @@ io.on('connection', function(socket){
         console.log('magic[%d] = %s', i, Magics[i]);
     addWebOwnSocket(socket, String(magic));
   });
-
-  
 });
 
 function addWebOwnSocket(socket, magic)   {
