@@ -114,7 +114,7 @@ const ENEMY_KINDS = 4, ENEMY_BULLET_KINDS = 2;
 const FORT_HEALTH = 5, PLANE_SMALL_HEALTH = 1, PLANE_MEDIUM_HEALTH = 3, PLANE_LARGE_HEALTH = 500;
 const FORT = 0, PLANE_SMALL = 1, PLANE_MEDIUM = 2, PLANE_LARGE = 3;
 const FORT_BULLET = 1, PLANE_SMALL_BULLET = 0, PLANE_MEDIUM_BULLET = 0, PLANE_LARGE_BULLET = 1;
-const FORT_BULLET_NUM = 3; PLANE_LARGE_BULLET_NUM = 5;
+const FORT_BULLET_NUM = 3, PLANE_LARGE_BULLET_NUM = 5;
 var enemys = new Array();
 var enemy_num = [4, 20, 10, 2];
 var nextEnemy = [0, 0, 0, 10000];
@@ -451,7 +451,7 @@ function listenSocket() {
 			multiplePlayer = true;
 			ultsign_g.kill();
 			ultText.kill();
-			scoreText.text = 'P1 score: 0'
+			scoreText.text = 'P1 score: 0';
 			scoreText2 = game.add.text(16, 50, 'P2 score: 0', { fontSize: '20px', fill: '#000' });
 			player.reset(game.width / 3, game.height - 50);
 			setupPlayer2(false);
@@ -1022,7 +1022,7 @@ function rotateRocket()	{
 	rocketPool.forEachAlive(function(rocket)	{
 		if( rocket.target != null && rocket.target.alive )	{
 			var radians = game.physics.arcade.angleBetween(rocket, rocket.target);
-			degrees = radians * (180/Math.PI);
+			var degrees = radians * (180/Math.PI);
 			game.physics.arcade.velocityFromAngle(degrees, rocket_velocity + 25*weaponLevel, rocket.body.velocity);
 			rocket.angle = degrees+90;
 		}else {
@@ -1102,7 +1102,7 @@ function playerVsBoss(player, boss)	{
 		}else{
 			socket.emit('vibrate', 'die');
 			gameOver();
-			killAllEnemy()
+			killAllEnemy();
 			killAllEnemyBullet();
 		}
 	}
@@ -1373,7 +1373,7 @@ function PlayerVsBox2(player, box) { // player 2
 	switch(box.type)	{
 		case yellow:
 			FireBallSurround2(player);
-			weaponLevel2--
+			weaponLevel2--;
 			break;
 		case orange:
 			weaponLevel2--;
