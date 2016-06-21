@@ -7,7 +7,7 @@ Players will need mobiles to control their planes.
 There are various enemies, buffs (boxes) as well as strengthful bosses in the game.  
 Earn as many scores as you can!!
 
-__Mobile Features (to be modified)__
+__Mobile Features (to be modified)__ >> [github repository]
 - Movement detection  
 - Audio and vibration feedbacks
 - Weapon swapping (three modes)
@@ -60,3 +60,4 @@ $ npm start
    [express]: <http://expressjs.com>
    [socket.io]: <http://socket.io>
    [firebase]: <https://www.firebase.com>
+   [github repository]: <https://github.com/TEMU3000/DSDL_Android>
