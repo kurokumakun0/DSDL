@@ -7,13 +7,7 @@ Players will need mobiles to control their planes.
 There are various enemies, buffs (boxes) as well as strengthful bosses in the game.  
 Earn as many scores as you can!!
 
-__Mobile Features (to be modified)__ >> [github repository]
-- Movement detection  
-- Audio and vibration feedbacks
-- Weapon swapping (three modes)
-- Ultimate sign (flashes when it's ready)
-- Ultimate launching
-- Gameover animation
+__Mobile Features__ >> [github repository]
 
 __Web Features (to be modified)__
 - Single/~~Double~~ Multiple player modes
