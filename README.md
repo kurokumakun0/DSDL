@@ -37,7 +37,7 @@ $ npm start
  > open url "http://localhost:3000" with browser  
  > start mobile app and key in the magic hash value ( text highlighted below )
  
-![alt tag](https://github.com/TEMU3000/DSDL/blob/master/assets/menu_page.png)
+![alt tag](https://github.com/TEMU3000/DSDL/blob/master/assets/github/menu_page.png)
 
 #### Tech (to be modified)
 * Front End

@@ -21,33 +21,37 @@ var multiplePlayer = false;
 var multiReady = false;
 
 function preload() {
-	game.load.image('gamestartMenu', '/assets/menu.png');
-	game.load.image('sky', '/assets/seatiles.png');
-	game.load.image('bullet', '/assets/shump_assets/player_bullet_2.png');game.load.image('bullet2', '/assets/shump_assets/player_bullet_1.png');
-	game.load.image('ray', '/assets/ray2.png');game.load.image('ray2', '/assets/ray2.png');
-	game.load.image('player', '/assets/THSR.png');	game.load.image('player2', '/assets/N700A.png');
-	game.load.image('enemy1', '/assets/EMU800.png');
-	game.load.image('enemy2', '/assets/EMU700.png');
-	game.load.image('enemy3', '/assets/shump_assets/mob_flagship_1.png');
-	game.load.image('enemy_bullet1', '/assets/bullet.png');
-	game.load.image('enemy_bullet2', '/assets/shump_assets/mob_bullet_2.png');
-	game.load.image('square', '/assets/tile_question_box.png');
-	game.load.image('ultsign', '/assets/50ult.png');
-	game.load.image('ultsign_g', '/assets/50ult_gray.png');
-	game.load.image('boss', '/assets/ufo.png');
-	game.load.image('boss_bullet0', '/assets/energy_bullet.png');
-	game.load.image('boss_bullet1', 'assets/ray3.png');
-	game.load.spritesheet('bonus_cube', 'assets/shump_assets/cubes.png', 24, 24);
-	game.load.spritesheet('enemy0', '/assets/shump_assets/mob_turret_1.png', 24, 24);
-	game.load.spritesheet('explosion', 'assets/shump_assets/explosion_1.png', 32, 32);
-	game.load.spritesheet('shield', 'assets/magic.png', 192, 192);	game.load.spritesheet('shield2', 'assets/magic.png', 192, 192);
-	game.load.spritesheet('lightning', 'assets/lightning.png', 55, 208);game.load.spritesheet('lightning2', 'assets/lightning.png', 55, 208);
-	game.load.spritesheet('rocket', 'assets/arrows.png', 48, 48);
-	game.load.spritesheet('fireball', '/assets/fireball.png', 32, 30);
-	this.load.bitmapFont('minecraftia', '/assets/shump_assets/minecraftia.png', '/assets/shump_assets/minecraftia.xml');
-	game.load.audio('menuBGM', 'assets/shump_assets/audio/menu.mp3');
-	game.load.audio('gameBGM', 'assets/shump_assets/audio/ingame.mp3');
-	game.load.audio('explodeSFX', 'assets/shump_assets/audio/explosion_1.wav');
+	game.load.image('start_menu', '/assets/menu.png');
+	game.load.image('seatiles', '/assets/seatiles.png');
+	game.load.image('player', '/assets/player_1.png');
+	game.load.image('player2', '/assets/player_2.png');
+	game.load.image('bullet', '/assets/player_weapon_bullet_1.png');
+	game.load.image('bullet2', '/assets/player_weapon_bullet_2.png');
+	game.load.image('ray', '/assets/player_weapon_ray.png');
+	game.load.image('ray2', '/assets/player_weapon_ray.png');
+	game.load.image('enemy1', '/assets/enemy_1.png');
+	game.load.image('enemy2', '/assets/enemy_2.png');
+	game.load.image('enemy3', '/assets/enemy_3.png');
+	game.load.image('enemy_bullet1', '/assets/enemy_bullet_1.png');
+	game.load.image('enemy_bullet2', '/assets/enemy_bullet_2.png');
+	game.load.image('boss', '/assets/boss.png');
+	game.load.image('boss_bullet0', '/assets/boss_weapon_bullet.png');
+	game.load.image('boss_bullet1', '/assets/boss_weapon_ray.png');
+	game.load.image('ult_ready_sign', '/assets/ult_ready.png');
+	game.load.image('ult_loading_sign', '/assets/ult_loading.png');
+	game.load.spritesheet('bonus_box', '/assets/cubes.png', 24, 24);
+	game.load.spritesheet('enemy0', '/assets/enemy_0.png', 24, 24);
+	game.load.spritesheet('explosion', '/assets/explosion.png', 32, 32);
+	game.load.spritesheet('shield', '/assets/player_shield.png', 192, 192);
+	game.load.spritesheet('shield2', '/assets/player_shield.png', 192, 192);
+	game.load.spritesheet('lightning', '/assets/player_weapon_lightning.png', 55, 208);
+	game.load.spritesheet('lightning2', 'assets/player_weapon_lightning.png', 55, 208);
+	game.load.spritesheet('rocket', '/assets/player_rocket.png', 48, 48);
+	game.load.spritesheet('fireball', '/assets/player_fireball.png', 32, 30);
+	this.load.bitmapFont('minecraftia', '/assets/font.png', '/assets/font.xml');
+	game.load.audio('menuBGM', '/assets/audio/menu.mp3');
+	game.load.audio('gameBGM', '/assets/audio/ingame.mp3');
+	game.load.audio('explodeSFX', '/assets/audio/explosion.wav');
 }
 
 //Weapon Ult
@@ -61,7 +65,7 @@ var weapon_num = [500, 20, 10];
 var fireRate, rayfireRate, lightningfireRate, fireRate2, rayfireRate2, lightningfireRate2;
 var nextFire = 0, nextFire2 = 0;
 var player_bullet_velocity = 750;
-var ultText, ultsign, ultsign_g;
+var ultText, ult_ready_sign, ult_loading_sign;
 var ult = EMPTY;
 var ultstate = ['restore','ready'];
 
@@ -454,7 +458,7 @@ function listenSocket() {
 	socket.on('players'+magicPN, function(msg) {
 		if(msg == '2'){
 			multiplePlayer = true;
-			ultsign_g.kill();
+			ult_loading_sign.kill();
 			ultText.kill();
 			scoreText.text = 'P1 score: 0';
 			scoreText2 = game.add.text(16, 50, 'P2 score: 0', { fontSize: '20px', fill: '#000' });
@@ -682,10 +686,10 @@ function fire2() { // player 2
 
 function fillult() {
 	ult = FILLED;
-	if( ultsign != null )	{
-		ultsign.reset(16, 36);
+	if( ult_ready_sign != null )	{
+		ult_ready_sign.reset(16, 36);
 	}else {
-		ultsign = game.add.sprite(16, 36, 'ultsign');	
+		ult_ready_sign = game.add.sprite(16, 36, 'ult_ready_sign');	
 	}
 	ultText.fill = '#F00';
 	socket.emit('ULT'+magicPN, 'filled');
@@ -695,7 +699,7 @@ function launchult() {
 	if(ult === FILLED){
 		ult = EMPTY;
 		ultText.fill = '#000';
-		ultsign.kill();
+		ult_ready_sign.kill();
 		for( var i = 0; i < ENEMY_KINDS; i++){
 			enemys[i].forEachAlive(function (enemy) {
 				explode(enemy);
@@ -704,12 +708,7 @@ function launchult() {
 				score += 10;
 			}, this);
 		}
-		for( var i = 0; i < ENEMY_BULLET_KINDS; i++){
-			enemyBullets[i].forEachAlive(function (bullet) {
-				explode(bullet);
-				bullet.kill();
-			}, this);
-		}
+		killAllEnemyBullet();
 		bosses.forEachAlive(function (boss) {
 				explode(boss);
 				boss.damage(ULT_DAMAGE);
@@ -734,6 +733,17 @@ function killAllEnemyBullet() {
 		enemyBullets[i].forEachAlive(function (bullet) {
 			explode(bullet);
 			bullet.kill();
+		}, this);
+	}
+}
+
+function killAllLigntning() {
+	lightnings.forEachAlive(function (lightning) {
+		lightning.kill();
+	}, this);
+	if(multiplePlayer){
+		lightnings2.forEachAlive(function (lightning2) {
+			lightning2.kill();
 		}, this);
 	}
 }
@@ -1113,6 +1123,7 @@ function playerVsBoss(player, boss)	{
 			gameOver();
 			killAllEnemy();
 			killAllEnemyBullet();
+			killAllLigntning();
 		}
 	}
 }
@@ -1159,6 +1170,7 @@ function playerHit(player, enemy) {
 			gameOver();
 			killAllEnemy();
 			killAllEnemyBullet();
+			killAllLigntning();
 		}
 	}
 }
@@ -1203,6 +1215,7 @@ function playerHitByBullet(player, bullet) {
 			gameOver();
 			killAllEnemy();
 			killAllEnemyBullet();
+			killAllLigntning();
 		}
 	}
 }
@@ -1345,6 +1358,7 @@ function playerHit2(player, enemy) { // player 2
 		gameOver2();
 		killAllEnemy();
 		killAllEnemyBullet();
+		killAllLigntning();
 	}
 }
 
@@ -1375,6 +1389,7 @@ function playerHitByBullet2(player, bullet) { // player 2
 		gameOver2();
 		killAllEnemy();
 		killAllEnemyBullet();
+		killAllLigntning();
 	}
 }
 
@@ -1581,7 +1596,7 @@ function gameOver2() { // multiplayer gameover
 
 function setupBackground() {
 	game.physics.startSystem(Phaser.Physics.ARCADE);
-	background = game.add.tileSprite(0, 0, window.innerWidth, window.innerHeight, 'sky');
+	background = game.add.tileSprite(0, 0, window.innerWidth, window.innerHeight, 'seatiles');
 	background.tileScale.x = window.innerWidth/background.width;
 	background.tileScale.y = window.innerHeight/background.height;
 }
@@ -1846,7 +1861,7 @@ function setupBoxes() {
 	boxes = game.add.group();
 	boxes.enableBody = true;
 	boxes.physicsBodyType = Phaser.Physics.ARCADE;
-	boxes.createMultiple(MAX_BOXES, 'bonus_cube');
+	boxes.createMultiple(MAX_BOXES, 'bonus_box');
 	boxes.setAll('body.collideWorldBounds', true);
 	boxes.setAll('outOfBoundsKill', true);
 	boxes.setAll('body.bounce.x', 1);
@@ -1868,7 +1883,7 @@ function setupExplosions() {
 }
 
 function setupMenu() {
-	gamestartMenu = game.add.sprite(game.width/2, game.height / 2, 'gamestartMenu');
+	gamestartMenu = game.add.sprite(game.width/2, game.height / 2, 'start_menu');
 	gamestartMenu.anchor.setTo(0.5, 0.5);
 }
 
@@ -1877,7 +1892,7 @@ function resetMenu() {
 }
 
 function setupULT(){
-	ultsign_g = game.add.sprite(16, 36, 'ultsign_g');
+	ult_loading_sign = game.add.sprite(16, 36, 'ult_loading_sign');
 }
 
 function setupRocket() {
